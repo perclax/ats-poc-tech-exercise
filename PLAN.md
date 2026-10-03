@@ -16,7 +16,7 @@ Update the status table after the user accepts a task result.
 | Task | Title | Status | Depends on |
 | --- | --- | --- | --- |
 | 0 | Bootstrap project and infrastructure | Done | — |
-| 1 | Establish the application domain and ports | Pending | Task 0 |
+| 1 | Establish the application domain and ports | Done | Task 0 |
 | 2 | Submit and persist applications | Pending | Task 1 |
 | 3 | Enrich applications asynchronously | Pending | Task 2 |
 | 4 | Browse and inspect applications | Pending | Task 2; Task 3 for enrichment fields |

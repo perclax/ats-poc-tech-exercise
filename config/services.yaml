@@ -10,6 +10,9 @@ services:
         resource: '../src/'
         exclude:
             - '../src/Kernel.php'
+            - '../src/Applications/Domain/'
+            - '../src/Applications/Application/Command/'
+            - '../src/Applications/Application/Query/'
 
     App\Infrastructure\Probe\RabbitMq\ProbeReceiptStore:
         arguments:

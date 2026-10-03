@@ -12,7 +12,7 @@
         <server name="KERNEL_CLASS" value="App\Kernel" force="true"/>
     </php>
     <testsuites>
-        <testsuite name="Task 0">
+        <testsuite name="ATS PoC">
             <directory>tests</directory>
             <exclude>tests/Smoke</exclude>
         </testsuite>
