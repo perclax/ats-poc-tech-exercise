@@ -1,0 +1,12 @@
+framework:
+    secret: '%env(APP_SECRET)%'
+    test: false
+    router:
+        utf8: true
+    http_method_override: false
+    php_errors:
+        log: true
+
+when@test:
+    framework:
+        test: true

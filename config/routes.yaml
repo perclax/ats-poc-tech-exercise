@@ -1,0 +1,4 @@
+health:
+    path: /health
+    controller: App\Infrastructure\Probe\Http\HealthController
+    methods: [GET]
