@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Application received{% endblock %}
+
+{% block body %}
+    <p class="eyebrow">Application {{ applicationId }}</p>
+    <h1>Application received</h1>
+    {% if analysisQueued %}
+        <p>Your application was stored successfully. Its analysis is pending and has been queued.</p>
+    {% else %}
+        <div class="warning" role="status">
+            <p>Your application was stored successfully. Its analysis is still pending, but it could not be queued automatically.</p>
+            <p>The application remains safe and can be recovered without submitting it again.</p>
+        </div>
+    {% endif %}
+{% endblock %}

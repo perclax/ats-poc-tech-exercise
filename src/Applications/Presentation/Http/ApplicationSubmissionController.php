@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Applications\Presentation\Http;
+
+use App\Applications\Application\Command\SubmitApplication;
+use App\Applications\Application\Command\SubmitApplicationHandler;
+use App\Applications\Application\Query\ListJobs;
+use App\Applications\Application\Query\ListJobsHandler;
+use App\Applications\Presentation\Form\ApplicationSubmissionInput;
+use App\Applications\Presentation\Form\ApplicationSubmissionType;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
+
+final class ApplicationSubmissionController extends AbstractController
+{
+    public function form(
+        Request $request,
+        SubmitApplicationHandler $submitApplication,
+        ListJobsHandler $listJobs,
+    ): Response {
+        $input = new ApplicationSubmissionInput();
+        $form = $this->createForm(ApplicationSubmissionType::class, $input);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $result = $submitApplication(new SubmitApplication(
+                $input->fullName,
+                $input->email,
+                $input->phone,
+                $input->jobId,
+                $input->notes,
+                $input->cvText,
+            ));
+
+            $this->addFlash('application_submission', [
+                'applicationId' => $result->applicationId->value,
+                'analysisQueued' => $result->analysisQueued,
+            ]);
+
+            return $this->redirectToRoute('application_submitted', ['applicationId' => $result->applicationId->value]);
+        }
+
+        return $this->render('applications/apply.html.twig', [
+            'form' => $form,
+            'jobs' => ($listJobs)(new ListJobs()),
+        ], $form->isSubmitted() ? new Response(status: Response::HTTP_UNPROCESSABLE_ENTITY) : null);
+    }
+
+    public function submitted(Request $request, string $applicationId): Response
+    {
+        $session = $request->getSession();
+        if (!$session instanceof FlashBagAwareSessionInterface) {
+            throw new \LogicException('The application submission flow requires a flash-aware session.');
+        }
+
+        foreach ($session->getFlashBag()->get('application_submission') as $submission) {
+            if (\is_array($submission)
+                && $applicationId === ($submission['applicationId'] ?? null)
+                && \is_bool($submission['analysisQueued'] ?? null)) {
+                return $this->render('applications/submitted.html.twig', [
+                    'applicationId' => $applicationId,
+                    'analysisQueued' => $submission['analysisQueued'],
+                ]);
+            }
+        }
+
+        return new RedirectResponse($this->generateUrl('application_apply'));
+    }
+}

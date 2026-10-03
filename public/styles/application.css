@@ -1,0 +1,12 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; color: #172033; background: #f5f7fb; }
+body { margin: 0; }
+.page { width: min(52rem, calc(100% - 2rem)); margin: 0 auto; padding: 2rem 0 4rem; }
+.eyebrow { color: #50617a; font-size: .875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.jobs { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.jobs article, form, .warning { background: white; border: 1px solid #dce2eb; border-radius: .75rem; padding: 1rem; }
+form > div { margin-bottom: 1rem; }
+label { display: block; font-weight: 700; margin-bottom: .35rem; }
+input, select, textarea { box-sizing: border-box; font: inherit; padding: .65rem; width: 100%; }
+button { background: #244ac7; border: 0; border-radius: .4rem; color: white; cursor: pointer; font: inherit; font-weight: 700; padding: .75rem 1rem; }
+ul { color: #a11c31; }
+.warning { border-color: #d99112; }
