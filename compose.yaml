@@ -16,7 +16,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    command: ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/index.php"]
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/router.php"]
     ports:
       - "8080:8000"
     depends_on:

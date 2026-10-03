@@ -1,6 +1,11 @@
 framework:
     secret: '%env(APP_SECRET)%'
     test: false
+    form: true
+    csrf_protection: true
+    validation:
+        email_validation_mode: html5
+    session: true
     router:
         utf8: true
     http_method_override: false

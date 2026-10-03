@@ -1,0 +1,17 @@
+services:
+    App\Applications\Application\Port\ApplicationRepository:
+        alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationRepository
+        public: true
+
+    App\Applications\Application\Port\EventPublisher:
+        class: App\Applications\Infrastructure\Messaging\SymfonyEventPublisher
+        public: true
+        autowire: true
+
+    App\Applications\Application\Command\SubmitApplicationHandler:
+        public: true
+        autowire: true
+
+    App\Applications\Infrastructure\Messaging\MessengerEnrichmentDispatcher:
+        public: true
+        autowire: true

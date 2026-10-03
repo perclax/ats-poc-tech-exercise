@@ -6,3 +6,9 @@ doctrine_mongodb:
     document_managers:
         default:
             auto_mapping: false
+            mappings:
+                Applications:
+                    type: attribute
+                    dir: '%kernel.project_dir%/src/Applications/Infrastructure/Persistence/Doctrine'
+                    prefix: 'App\Applications\Infrastructure\Persistence\Doctrine'
+                    is_bundle: false

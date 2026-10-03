@@ -2,3 +2,13 @@ health:
     path: /health
     controller: App\Infrastructure\Probe\Http\HealthController
     methods: [GET]
+
+application_apply:
+    path: /apply
+    controller: App\Applications\Presentation\Http\ApplicationSubmissionController::form
+    methods: [GET, POST]
+
+application_submitted:
+    path: /apply/submitted/{applicationId}
+    controller: App\Applications\Presentation\Http\ApplicationSubmissionController::submitted
+    methods: [GET]
