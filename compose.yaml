@@ -1,0 +1,96 @@
+x-php-service: &php-service
+  image: ats-poc-php:8.4.25
+  working_dir: /app
+  env_file:
+    - .env
+  volumes:
+    - .:/app
+    - vendor_data:/app/vendor
+    - probe_data:/app/var/probes
+  networks:
+    - ats_network
+
+services:
+  app:
+    <<: *php-service
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public", "public/index.php"]
+    ports:
+      - "8080:8000"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/health') === false ? 1 : 0);"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  worker:
+    <<: *php-service
+    command: ["php", "bin/console", "messenger:consume", "infrastructure_async", "--time-limit=3600", "--memory-limit=128M", "--no-interaction"]
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r '$$command = @file_get_contents(\"/proc/1/cmdline\"); exit(is_string($$command) && str_contains($$command, \"messenger:consume\") ? 0 : 1);'"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8.0.30-noble
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ats
+      MONGO_INITDB_ROOT_PASSWORD: ats-dev-password
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ats_network
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$$MONGO_INITDB_ROOT_USERNAME\" --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval 'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4.2.9-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ats
+      RABBITMQ_DEFAULT_PASS: ats-dev-password
+      RABBITMQ_DEFAULT_VHOST: /ats
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ats_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  rabbitmq_data:
+  vendor_data:
+  probe_data:
+
+networks:
+  ats_network:
+    driver: bridge

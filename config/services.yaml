@@ -1,0 +1,16 @@
+parameters:
+    probe_receipt_directory: '%env(PROBE_RECEIPT_DIRECTORY)%'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+
+    App\Infrastructure\Probe\RabbitMq\ProbeReceiptStore:
+        arguments:
+            $directory: '%probe_receipt_directory%'
