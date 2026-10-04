@@ -8,6 +8,8 @@ init:
 	$(COMPOSE) build
 	$(COMPOSE) run --rm --no-deps app composer install --no-interaction --prefer-dist
 	$(COMPOSE) up -d --wait
+	$(COMPOSE) exec -T app php bin/console messenger:setup-transports
+	$(COMPOSE) exec -T app php bin/console doctrine:mongodb:schema:update
 
 test:
 	$(RUN_TEST) php vendor/bin/phpunit
@@ -23,6 +25,7 @@ smoke:
 	$(COMPOSE) exec -T app php bin/console app:probe:mongodb
 	$(COMPOSE) exec -T app php bin/console app:probe:rabbitmq
 	./tests/Smoke/http.sh
+	./tests/Smoke/enrichment.sh
 
 check: test analyse lint smoke
 

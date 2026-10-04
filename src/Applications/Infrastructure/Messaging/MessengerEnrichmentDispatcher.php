@@ -19,7 +19,7 @@ final readonly class MessengerEnrichmentDispatcher implements EnrichmentDispatch
     public function dispatch(EnrichApplication $command): void
     {
         try {
-            $this->messageBus->dispatch($command);
+            $this->messageBus->dispatch($command, [new EnrichmentAttemptStamp(bin2hex(random_bytes(16)))]);
         } catch (TransportException $exception) {
             throw new EnrichmentDispatchFailed('The enrichment message could not be dispatched.', previous: $exception);
         }

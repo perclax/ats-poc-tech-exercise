@@ -34,7 +34,7 @@ services:
 
   worker:
     <<: *php-service
-    command: ["php", "bin/console", "messenger:consume", "infrastructure_async", "--time-limit=3600", "--memory-limit=128M", "--no-interaction"]
+    command: ["php", "bin/console", "messenger:consume", "infrastructure_async", "enrichment_async", "--time-limit=3600", "--memory-limit=128M", "--no-interaction"]
     depends_on:
       mongodb:
         condition: service_healthy

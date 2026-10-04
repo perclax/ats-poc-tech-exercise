@@ -19,10 +19,17 @@ services:
             $directory: '%probe_receipt_directory%'
 
     App\Applications\Application\Command\SubmitApplicationHandler: ~
+    App\Applications\Application\Command\EnrichApplicationHandler:
+        tags:
+            - { name: messenger.message_handler, from_transport: enrichment_async }
+    App\Applications\Application\Command\RecoverEnrichmentsHandler: ~
     App\Applications\Application\Query\ListJobsHandler: ~
 
     App\Applications\Application\Port\ApplicationRepository:
         alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationRepository
+
+    App\Applications\Application\Port\ApplicationEnrichmentRepository:
+        alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationEnrichmentRepository
 
     App\Applications\Application\Port\ApplicationIdGenerator:
         alias: App\Applications\Infrastructure\Identity\SymfonyUuidV7ApplicationIdGenerator
@@ -38,6 +45,9 @@ services:
 
     App\Applications\Application\Port\EnrichmentDispatcher:
         alias: App\Applications\Infrastructure\Messaging\MessengerEnrichmentDispatcher
+
+    App\Applications\Application\Port\CvEnricher:
+        alias: App\Applications\Infrastructure\Enrichment\DeterministicCvEnricher
 
     App\Applications\Infrastructure\Messaging\DispatchEnrichmentOnApplicationSubmitted:
         tags:
