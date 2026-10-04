@@ -22,7 +22,7 @@ smoke:
 	./tests/Smoke/compose.sh
 	$(COMPOSE) exec -T app php bin/console app:probe:mongodb
 	$(COMPOSE) exec -T app php bin/console app:probe:rabbitmq
-	curl --fail --silent --show-error http://localhost:8080/health >/dev/null
+	./tests/Smoke/http.sh
 
 check: test analyse lint smoke
 

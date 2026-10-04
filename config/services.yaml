@@ -17,3 +17,28 @@ services:
     App\Infrastructure\Probe\RabbitMq\ProbeReceiptStore:
         arguments:
             $directory: '%probe_receipt_directory%'
+
+    App\Applications\Application\Command\SubmitApplicationHandler: ~
+    App\Applications\Application\Query\ListJobsHandler: ~
+
+    App\Applications\Application\Port\ApplicationRepository:
+        alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationRepository
+
+    App\Applications\Application\Port\ApplicationIdGenerator:
+        alias: App\Applications\Infrastructure\Identity\SymfonyUuidV7ApplicationIdGenerator
+
+    App\Applications\Application\Port\Clock:
+        alias: App\Applications\Infrastructure\Time\SystemUtcClock
+
+    App\Applications\Application\Port\JobCatalog:
+        alias: App\Applications\Infrastructure\Job\VersionControlledJobCatalog
+
+    App\Applications\Application\Port\EventPublisher:
+        alias: App\Applications\Infrastructure\Messaging\SymfonyEventPublisher
+
+    App\Applications\Application\Port\EnrichmentDispatcher:
+        alias: App\Applications\Infrastructure\Messaging\MessengerEnrichmentDispatcher
+
+    App\Applications\Infrastructure\Messaging\DispatchEnrichmentOnApplicationSubmitted:
+        tags:
+            - { name: kernel.event_listener, event: App\Applications\Domain\Event\ApplicationSubmitted }

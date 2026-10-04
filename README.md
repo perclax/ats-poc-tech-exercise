@@ -1,8 +1,10 @@
 # ATS PoC technical exercise
 
-Task 0 provides the Symfony development environment and infrastructure required
-by the later ATS implementation tasks. It deliberately contains no application,
-candidate, job, CV, or enrichment behavior yet.
+The current implementation accepts candidate applications, stores them in
+MongoDB, and queues identifier-only enrichment commands through RabbitMQ. CV
+analysis is introduced in Task 3; until then, stored applications remain
+pending and the development worker deliberately does not consume the enrichment
+queue.
 
 ## Requirements
 
@@ -30,6 +32,7 @@ docker compose up -d --wait
 
 URLs:
 
+- Application form: <http://localhost:8080/apply>
 - HTTP health endpoint: <http://localhost:8080/health>
 - RabbitMQ management: <http://localhost:15672> (`ats` / `ats-dev-password`)
 
@@ -56,6 +59,11 @@ The RabbitMQ command uses a bounded wait, removes its receipt after success, and
 prunes only validated probe receipts older than one hour. It does not use ATS
 application data.
 
+Submitting an application stores it before queueing enrichment. If queueing
+fails, the confirmation reports that the stored application still needs
+recovery. Persistence and message publication are intentionally not atomic in
+this proof of concept; Task 3 adds the manual recovery path.
+
 ## Tests and quality checks
 
 ```bash
@@ -74,7 +82,7 @@ docker compose run --rm app php vendor/bin/php-cs-fixer check --diff
 ./tests/Smoke/compose.sh
 docker compose exec -T app php bin/console app:probe:mongodb
 docker compose exec -T app php bin/console app:probe:rabbitmq
-curl --fail --silent --show-error http://localhost:8080/health >/dev/null
+./tests/Smoke/http.sh
 ```
 
 `make check` runs the PHP test suite, PHPStan at level 8, formatting checks,
