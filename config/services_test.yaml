@@ -3,6 +3,10 @@ services:
         alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationRepository
         public: true
 
+    App\Applications\Application\Port\ApplicationIdGenerator:
+        class: App\Applications\Infrastructure\Identity\SymfonyUuidV7ApplicationIdGenerator
+        public: true
+
     App\Applications\Application\Port\EventPublisher:
         class: App\Applications\Infrastructure\Messaging\SymfonyEventPublisher
         public: true

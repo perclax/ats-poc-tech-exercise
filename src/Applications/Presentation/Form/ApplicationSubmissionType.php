@@ -30,14 +30,13 @@ final class ApplicationSubmissionType extends AbstractType
         }
 
         $builder
-            ->add('fullName', TextType::class, ['label' => 'Full name', 'empty_data' => ''])
-            ->add('email', EmailType::class, ['label' => 'Email', 'empty_data' => ''])
+            ->add('fullName', TextType::class, ['label' => 'Full name'])
+            ->add('email', EmailType::class, ['label' => 'Email'])
             ->add('phone', TextType::class, ['label' => 'Phone (optional)', 'required' => false])
             ->add('jobId', ChoiceType::class, [
                 'label' => 'Job',
                 'placeholder' => 'Choose a job',
                 'choices' => $choices,
-                'empty_data' => '',
             ])
             ->add('notes', TextareaType::class, [
                 'label' => 'Notes (optional)',
@@ -47,7 +46,6 @@ final class ApplicationSubmissionType extends AbstractType
             ->add('cvText', TextareaType::class, [
                 'label' => 'CV text',
                 'trim' => false,
-                'empty_data' => '',
                 'attr' => ['rows' => 14],
             ])
             ->add('submit', SubmitType::class, ['label' => 'Submit application']);

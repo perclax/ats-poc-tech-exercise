@@ -29,12 +29,12 @@ final class ApplicationSubmissionController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $result = $submitApplication(new SubmitApplication(
-                $input->fullName,
-                $input->email,
+                $this->requiredString($input->fullName, 'fullName'),
+                $this->requiredString($input->email, 'email'),
                 $input->phone,
-                $input->jobId,
+                $this->requiredString($input->jobId, 'jobId'),
                 $input->notes,
-                $input->cvText,
+                $this->requiredString($input->cvText, 'cvText'),
             ));
 
             $this->addFlash('application_submission', [
@@ -70,5 +70,14 @@ final class ApplicationSubmissionController extends AbstractController
         }
 
         return new RedirectResponse($this->generateUrl('application_apply'));
+    }
+
+    private function requiredString(?string $value, string $field): string
+    {
+        if (null === $value) {
+            throw new \LogicException(\sprintf('The valid application form is missing required field "%s".', $field));
+        }
+
+        return $value;
     }
 }

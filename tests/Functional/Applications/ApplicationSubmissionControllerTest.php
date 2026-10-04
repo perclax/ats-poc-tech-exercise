@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Applications;
 
 use App\Applications\Application\Exception\EnrichmentDispatchFailed;
+use App\Applications\Application\Port\ApplicationIdGenerator;
 use App\Applications\Application\Port\EventPublisher;
+use App\Applications\Domain\Application\ApplicationId;
 use App\Applications\Domain\Event\ApplicationSubmitted;
 use App\Applications\Infrastructure\Persistence\Doctrine\ApplicationDocument;
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -93,6 +95,39 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
         self::assertSame(0, $this->countApplications());
     }
 
+    public function testAllEmptyBrowserSubmissionRendersRequiredErrorsWithoutInvokingSubmission(): void
+    {
+        $this->client->disableReboot();
+        $applicationIds = new RecordingApplicationIdGenerator();
+        self::getContainer()->set(ApplicationIdGenerator::class, $applicationIds);
+        $crawler = $this->client->request('GET', '/apply');
+        $form = $crawler->selectButton('Submit application')->form([
+            'application_submission[fullName]' => '',
+            'application_submission[email]' => '',
+            'application_submission[phone]' => '',
+            'application_submission[jobId]' => '',
+            'application_submission[notes]' => '',
+            'application_submission[cvText]' => '',
+        ]);
+
+        $crawler = $this->client->submit($form);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertFalse($this->client->getResponse()->isRedirection());
+        self::assertStringContainsString('Enter your full name.', $crawler->text());
+        self::assertStringContainsString('Enter your email address.', $crawler->text());
+        self::assertStringContainsString('Choose a job.', $crawler->text());
+        self::assertStringContainsString('Paste your CV text.', $crawler->text());
+        self::assertStringNotContainsString('The CSRF token is invalid.', $crawler->text());
+        self::assertSame(0, $applicationIds->calls);
+        self::assertSame(0, $this->countApplications());
+        self::assertCount(0, $this->transport()->getSent());
+
+        $session = $this->client->getRequest()->getSession();
+        self::assertInstanceOf(FlashBagAwareSessionInterface::class, $session);
+        self::assertSame([], $session->getFlashBag()->peek('application_submission'));
+    }
+
     public function testEveryTextLimitIsEnforcedByTheForm(): void
     {
         $crawler = $this->client->request('GET', '/apply');
@@ -139,6 +174,7 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('csrf token is invalid', strtolower($crawler->text()));
+        self::assertStringNotContainsString('Enter your full name.', $crawler->text());
         self::assertSame(0, $this->countApplications());
     }
 
@@ -232,5 +268,17 @@ final class ExpectedFailingEventPublisher implements EventPublisher
     public function publish(ApplicationSubmitted $event): void
     {
         throw new EnrichmentDispatchFailed('Expected Messenger transport failure.');
+    }
+}
+
+final class RecordingApplicationIdGenerator implements ApplicationIdGenerator
+{
+    public int $calls = 0;
+
+    public function generate(): ApplicationId
+    {
+        ++$this->calls;
+
+        return ApplicationId::fromString('018f47a2-7b3c-7def-8123-123456789abc');
     }
 }
