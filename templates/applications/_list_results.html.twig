@@ -1,0 +1,26 @@
+<section id="application-results" aria-labelledby="results-heading" data-canonical-url="{{ path('application_list', parameters.linkParameters) }}">
+    <h2 id="results-heading" tabindex="-1">Newest matching applications</h2>
+    {% if parameters.errors is not empty %}
+        <p role="alert">Correct the filter errors to view applications.</p>
+    {% elseif applications is empty %}
+        <div class="empty-state">
+            {% if parameters.linkParameters is not empty %}<p>No applications match these filters. Change or clear the filters.</p>{% else %}<p>No applications have been received yet.</p>{% endif %}
+        </div>
+    {% else %}
+        <ul class="application-results">
+            {% for application in applications %}
+                <li class="application-card" data-application-id="{{ application.id }}" data-enrichment-status="{{ application.enrichmentStatus.value }}">
+                    <h3><a data-detail-link href="{{ path('application_detail', parameters.linkParameters|merge({id: application.id})) }}">{{ application.candidateName }}</a></h3>
+                    <p class="candidate-email">{{ application.candidateEmail }}</p>
+                    <dl>
+                        <div><dt>Job</dt><dd>{{ application.jobTitle }}</dd></div>
+                        <div><dt>Application status</dt><dd>{% include 'applications/_status.html.twig' with {status: application.applicationStatus.value} only %}</dd></div>
+                        <div><dt>Mock analysis status</dt><dd>{% include 'applications/_status.html.twig' with {status: application.enrichmentStatus.value} only %}</dd></div>
+                        <div><dt>Mock analysis score</dt><dd>{% if application.score is not null %}{{ application.score }}/100{% elseif application.enrichmentStatus.value == 'failed' %}Not available{% else %}Not available yet{% endif %}</dd></div>
+                        <div><dt>Applied (UTC)</dt><dd><time datetime="{{ application.appliedAt|date('c', 'UTC') }}">{{ application.appliedAt|date('Y-m-d H:i:s', 'UTC') }}</time></dd></div>
+                    </dl>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>

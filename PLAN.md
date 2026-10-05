@@ -20,7 +20,7 @@ Update the status table after the user accepts a task result.
 | 2 | Submit and persist applications | Done | Task 1 |
 | 3 | Enrich applications asynchronously | Done | Task 2 |
 | 4 | Browse and inspect applications | Done | Task 2; Task 3 for enrichment fields |
-| 5 | Complete the user experience | Pending | Tasks 2–4 |
+| 5 | Complete the user experience | Done | Tasks 2–4 |
 | 6 | Verify and prepare the submission | Pending | Tasks 0–5 |
 
 Allowed status values: `Pending`, `In progress`, `Blocked`, and `Done`.

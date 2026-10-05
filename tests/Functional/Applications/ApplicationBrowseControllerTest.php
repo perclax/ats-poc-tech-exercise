@@ -54,7 +54,7 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         $before = $this->snapshot();
         $crawler = $this->client->request('GET', '/applications', ['search' => $this->correlation]);
         self::assertResponseIsSuccessful();
-        self::assertCount(4, $crawler->filter('tbody tr'));
+        self::assertCount(4, $crawler->filter('.application-card'));
         foreach (['Received', 'Pending', 'Processing', 'Completed', 'Failed', '0/100', 'Not available yet', 'Showing up to 100'] as $label) {
             self::assertSelectorTextContains('body', $label);
         }
@@ -83,9 +83,9 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         $parameters = ['search' => 'álvaro '.$this->correlation, 'job' => 'backend-developer', 'applicationStatus' => 'received', 'enrichmentStatus' => 'failed'];
         $crawler = $this->client->request('GET', '/applications', $parameters + ['returnUrl' => 'https://example.test/untrusted']);
         self::assertResponseIsSuccessful();
-        self::assertCount(1, $crawler->filter('tbody tr'));
-        self::assertSame($match['_id'], $crawler->filter('tbody tr')->attr('data-application-id'));
-        $link = $crawler->filter('tbody a')->link();
+        self::assertCount(1, $crawler->filter('.application-card'));
+        self::assertSame($match['_id'], $crawler->filter('.application-card')->attr('data-application-id'));
+        $link = $crawler->filter('[data-detail-link]')->link();
         $crawler = $this->client->click($link);
         self::assertResponseIsSuccessful();
         $back = $crawler->filter('.back-to-list')->attr('href');
@@ -93,7 +93,7 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         self::assertSame('/applications?'.http_build_query($parameters, '', '&', \PHP_QUERY_RFC3986), $back);
         self::assertStringNotContainsString('returnUrl', (string) $this->client->getResponse()->getContent());
         $this->client->click($crawler->filter('.back-to-list')->link());
-        self::assertSelectorCount(1, 'tbody tr');
+        self::assertSelectorCount(1, '.application-card');
     }
 
     public function testEveryFilterWorksIndependently(): void
@@ -103,10 +103,10 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         foreach ([['job' => 'backend-developer'], ['enrichmentStatus' => 'pending']] as $criteria) {
             $this->client->request('GET', '/applications', ['search' => $this->correlation] + $criteria);
             self::assertResponseIsSuccessful();
-            self::assertSelectorCount(1, 'tbody tr');
+            self::assertSelectorCount(1, '.application-card');
         }
         $this->client->request('GET', '/applications', ['search' => $this->correlation, 'applicationStatus' => 'received']);
-        self::assertSelectorCount(2, 'tbody tr');
+        self::assertSelectorCount(2, '.application-card');
     }
 
     public function testRegexCharactersAndBackslashesAreLiteralInHttpSearch(): void
@@ -116,8 +116,8 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         $this->insertApplication();
         $this->client->request('GET', '/applications', ['search' => '.* (?i) c:\\demo']);
         self::assertResponseIsSuccessful();
-        self::assertSelectorCount(1, 'tbody tr');
-        self::assertSelectorTextContains('tbody', $name);
+        self::assertSelectorCount(1, '.application-card');
+        self::assertSelectorTextContains('.application-results', $name);
     }
 
     /** @param array<string, mixed> $parameters */
@@ -131,7 +131,7 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/applications', $parameters);
         self::assertResponseStatusCodeSame(400);
         self::assertSelectorTextContains('body', 'Correct the filter errors');
-        self::assertCount(0, $crawler->filter('tbody tr'));
+        self::assertCount(0, $crawler->filter('.application-card'));
     }
 
     /** @return iterable<string, array{array<string, mixed>}> */
@@ -152,7 +152,7 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $this->client->request('GET', '/applications', ['search' => 'missing-'.$this->correlation]);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('.empty-state', 'No applications found.');
+        self::assertSelectorTextContains('.empty-state', 'No applications match these filters.');
     }
 
     public function testDetailEscapesAllContentPreservesLineBreaksAndDisplaysStoredResults(): void
@@ -166,11 +166,13 @@ final class ApplicationBrowseControllerTest extends WebTestCase
             'enrichmentSummary' => 'Mock analysis: '.$script, 'enrichedAt' => new UTCDateTime(new \DateTimeImmutable('2026-10-05T10:01:00Z')),
         ]);
         $this->client->request('GET', '/applications', ['search' => $this->correlation]);
-        self::assertSelectorNotExists('script');
+        self::assertSelectorCount(1, 'script[type="module"][src="/scripts/application.js"]');
+        self::assertSelectorNotExists('script:not([src])');
         self::assertStringNotContainsString($script, (string) $this->client->getResponse()->getContent());
         $crawler = $this->client->request('GET', '/applications/'.$document['_id']);
         self::assertResponseIsSuccessful();
-        self::assertSelectorNotExists('script');
+        self::assertSelectorCount(1, 'script[type="module"][src="/scripts/application.js"]');
+        self::assertSelectorNotExists('script:not([src])');
         self::assertStringNotContainsString($script, (string) $this->client->getResponse()->getContent());
         self::assertStringContainsString('&lt;script&gt;', (string) $this->client->getResponse()->getContent());
         self::assertSame($document['cvText'], $crawler->filter('.cv-text')->text(null, false));
@@ -183,14 +185,15 @@ final class ApplicationBrowseControllerTest extends WebTestCase
 
     public function testUnfinishedDetailHasNoInventedResultsOrRetryControls(): void
     {
-        foreach (['pending' => 'awaiting processing', 'processing' => 'Analysis is processing', 'failed' => 'could not be completed'] as $state => $copy) {
+        foreach (['pending' => 'Mock analysis has not started yet', 'processing' => 'Mock analysis is running', 'failed' => 'could not be completed'] as $state => $copy) {
             $document = $this->insertApplication(['enrichmentStatus' => $state]);
             $this->client->request('GET', '/applications/'.$document['_id']);
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('body', $copy);
             self::assertSelectorNotExists('.analysis-summary');
             self::assertSelectorNotExists('.notes');
-            self::assertSelectorNotExists('button');
+            self::assertSelectorNotExists('form[action*="retry"]');
+            self::assertSelectorExists('#refresh-button[type="button"]');
             self::assertStringNotContainsString('/100', (string) $this->client->getResponse()->getContent());
         }
     }
@@ -208,6 +211,42 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         $document = $this->insertApplication();
         $crawler = $this->client->request('GET', '/applications/'.$document['_id'], ['search' => ['invalid'], 'job' => 'unknown', 'returnUrl' => 'https://example.test']);
         self::assertSame('/applications', $crawler->filter('.back-to-list')->attr('href'));
+    }
+
+    public function testRefreshRegionsUseCanonicalValidatedUrlsAndStoredZeroResults(): void
+    {
+        $summary = 'Mock analysis: Matched 0 of 4 expected skill groups.';
+        $document = $this->insertApplication([
+            'enrichmentStatus' => 'completed', 'enrichmentScore' => 0,
+            'enrichmentSummary' => $summary,
+            'enrichedAt' => new UTCDateTime(new \DateTimeImmutable('2026-10-05T10:01:00Z')),
+        ]);
+        $crawler = $this->client->request('GET', '/applications', [
+            'search' => '  '.$this->correlation.'  ', 'job' => '', 'returnUrl' => 'https://example.test',
+        ]);
+        self::assertResponseIsSuccessful();
+        self::assertResponseHeaderSame('Content-Type', 'text/html; charset=UTF-8');
+        self::assertSame('/applications?search='.$this->correlation, $crawler->filter('#application-results')->attr('data-canonical-url'));
+        self::assertSelectorExists('form.filters[method="get"][action="/applications"]');
+        self::assertSelectorExists('.application-card[data-enrichment-status="completed"]');
+        self::assertSelectorExists('#refresh-status[role="status"][aria-live="polite"]');
+        $crawler = $this->client->request('GET', '/applications/'.$document['_id'], ['search' => '  '.$this->correlation.'  ']);
+        self::assertSame('/applications/'.$document['_id'].'?search='.$this->correlation, $crawler->filter('#application-analysis')->attr('data-canonical-url'));
+        self::assertSame($summary, $crawler->filter('.analysis-summary')->text());
+        self::assertSelectorTextContains('.analysis-score', '0/100');
+        self::assertSelectorExists('#application-analysis time[datetime="2026-10-05T10:01:00+00:00"]');
+        self::assertStringNotContainsString('No expected skill groups were detected', (string) $this->client->getResponse()->getContent());
+        self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
+        self::assertResponseHeaderSame('Referrer-Policy', 'no-referrer');
+    }
+
+    public function testErrorResponsesRetainPrivacyHeaders(): void
+    {
+        foreach (['/applications?job=unknown', '/applications/invalid', '/applications/018f47a2-7b3c-7def-8123-000000000000'] as $url) {
+            $this->client->request('GET', $url);
+            self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
+            self::assertResponseHeaderSame('Referrer-Policy', 'no-referrer');
+        }
     }
 
     private function snapshot(): string

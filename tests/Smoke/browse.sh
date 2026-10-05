@@ -26,6 +26,22 @@ curl --silent --show-error --cookie-jar "$cookie_jar" --output "$apply_body" "$b
 csrf_token="$(sed -n 's/.*name="application_submission\[_token\]".*value="\([^"]*\)".*/\1/p' "$apply_body" | head -1)"
 test -n "$csrf_token"
 
+invalid_status="$(curl --silent --show-error \
+    --cookie "$cookie_jar" \
+    --output "$temporary_directory/invalid-body" \
+    --write-out '%{http_code}' \
+    --data-urlencode 'application_submission[fullName]=' \
+    --data-urlencode 'application_submission[email]=' \
+    --data-urlencode 'application_submission[jobId]=' \
+    --data-urlencode 'application_submission[cvText]=' \
+    --data-urlencode "application_submission[_token]=$csrf_token" \
+    "$base_url/apply")"
+test "$invalid_status" = '422'
+grep -Fq 'id="validation-summary"' "$temporary_directory/invalid-body"
+grep -Fq 'href="#application_submission_fullName"' "$temporary_directory/invalid-body"
+grep -Fq 'aria-invalid="true"' "$temporary_directory/invalid-body"
+grep -Fq 'aria-describedby="application_submission_fullName_error1"' "$temporary_directory/invalid-body"
+
 status="$(curl --silent --show-error \
     --cookie "$cookie_jar" \
     --dump-header "$response_headers" \
@@ -49,9 +65,9 @@ application_id="$(printf '%s' "$location" | sed -n 's#^.*/apply/submitted/\([0-9
 test -n "$application_id"
 
 expected_summary='Mock analysis: Matched 4 of 4 expected skill groups: PHP, Symfony, Databases, REST APIs.'
-docker compose exec -T app php tests/Smoke/verify-enrichment.php wait "$application_id" 100 "$expected_summary"
 
 curl --silent --show-error --cookie "$cookie_jar" --output "$temporary_directory/confirmation" "$base_url$location"
 grep -Fq "href=\"/applications/$application_id\"" "$temporary_directory/confirmation"
+docker compose exec -T app php tests/Smoke/verify-enrichment.php wait "$application_id" 100 "$expected_summary"
 docker compose exec -T app php tests/Smoke/verify-browse.php "$application_id" "$correlation"
 printf 'RabbitMQ-backed application browsing verified for fictional correlation %s.\n' "$correlation"

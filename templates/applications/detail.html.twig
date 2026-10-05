@@ -2,6 +2,8 @@
 
 {% block title %}Application detail{% endblock %}
 
+{% block scripts %}<script type="module" src="/scripts/application.js"></script>{% endblock %}
+
 {% block body %}
     <p><a class="back-to-list" href="{{ path('application_list', listParameters) }}">Back to applications</a></p>
     <h1>{{ application.candidateName }}</h1>
@@ -12,31 +14,17 @@
             <dt>Email</dt><dd>{{ application.candidateEmail }}</dd>
             <dt>Phone</dt><dd>{{ application.candidatePhone ?? 'Not provided' }}</dd>
             <dt>Job</dt><dd>{{ application.jobTitle }} ({{ application.jobId }})</dd>
-            <dt>Application status</dt><dd>{{ application.applicationStatus.value|capitalize }}</dd>
-            <dt>Analysis status</dt><dd>{{ application.enrichmentStatus.value|capitalize }}</dd>
+            <dt>Application status</dt><dd>{% include 'applications/_status.html.twig' with {status: application.applicationStatus.value} only %}</dd>
             <dt>Applied (UTC)</dt><dd><time datetime="{{ application.appliedAt|date('c', 'UTC') }}">{{ application.appliedAt|date('Y-m-d H:i:s', 'UTC') }}</time></dd>
         </dl>
         <p>{{ application.jobDescription }}</p>
         {% if application.notes is not null %}<h3>Notes</h3><div class="preserved-text notes">{{ application.notes }}</div>{% endif %}
     </section>
-    <section aria-labelledby="mock-analysis">
-        <h2 id="mock-analysis">Mock analysis</h2>
-        <p>This simulation matches expected skill groups. It does not assess professional suitability.</p>
-        {% if application.enrichmentStatus.value == 'pending' %}
-            <p>Analysis is pending and awaiting processing.</p>
-            <p>Score: Not available yet</p>
-        {% elseif application.enrichmentStatus.value == 'processing' %}
-            <p>Analysis is processing.</p>
-            <p>Score: Not available yet</p>
-        {% elseif application.enrichmentStatus.value == 'failed' %}
-            <p>Analysis failed and could not be completed. The application remains received.</p>
-            <p>Score: Not available</p>
-        {% else %}
-            {% if application.summary is not null %}<p class="analysis-summary">{{ application.summary }}</p>{% endif %}
-            <p class="analysis-score">Score: {% if application.score is not null %}{{ application.score }}/100{% else %}Not available{% endif %}</p>
-            {% if application.enrichedAt is not null %}<p>Enriched (UTC): <time datetime="{{ application.enrichedAt|date('c', 'UTC') }}">{{ application.enrichedAt|date('Y-m-d H:i:s', 'UTC') }}</time></p>{% endif %}
-        {% endif %}
-    </section>
+    <div class="refresh-controls" hidden>
+        <p id="refresh-status" role="status" aria-live="polite" aria-atomic="true"></p>
+        <button type="button" id="refresh-button">Refresh results</button>
+    </div>
+    {% include 'applications/_analysis.html.twig' %}
     <section aria-labelledby="original-cv">
         <h2 id="original-cv">Original CV text</h2>
         <div class="preserved-text cv-text">{{ application.cvText }}</div>

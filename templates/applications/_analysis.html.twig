@@ -1,0 +1,19 @@
+<section id="application-analysis" aria-labelledby="mock-analysis" data-application-id="{{ application.id }}" data-enrichment-status="{{ application.enrichmentStatus.value }}" data-canonical-url="{{ path('application_detail', listParameters|merge({id: application.id})) }}">
+    <h2 id="mock-analysis" tabindex="-1">Mock analysis</h2>
+    <p>Mock analysis is a deterministic simulation of expected skill matching. It does not assess professional suitability.</p>
+    <p>Analysis status: {% include 'applications/_status.html.twig' with {status: application.enrichmentStatus.value} only %}</p>
+    {% if application.enrichmentStatus.value == 'pending' %}
+        <p>Mock analysis has not started yet.</p>
+        <p>Score: Not available yet</p>
+    {% elseif application.enrichmentStatus.value == 'processing' %}
+        <p>Mock analysis is running.</p>
+        <p>Score: Not available yet</p>
+    {% elseif application.enrichmentStatus.value == 'failed' %}
+        <p>Mock analysis could not be completed because of a technical problem. The application is still available.</p>
+        <p>Score: Not available</p>
+    {% else %}
+        {% if application.summary is not null %}<p class="analysis-summary">{{ application.summary }}</p>{% endif %}
+        <p class="analysis-score">Mock analysis score: {% if application.score is not null %}{{ application.score }}/100{% else %}Not available{% endif %}</p>
+        {% if application.enrichedAt is not null %}<p>Analysis completed (UTC): <time datetime="{{ application.enrichedAt|date('c', 'UTC') }}">{{ application.enrichedAt|date('Y-m-d H:i:s', 'UTC') }}</time></p>{% endif %}
+    {% endif %}
+</section>

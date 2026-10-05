@@ -42,6 +42,9 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
         $crawler = $this->client->request('GET', '/apply');
 
         self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('#validation-summary');
+        self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
+        self::assertResponseHeaderSame('Referrer-Policy', 'no-referrer');
         self::assertSelectorTextContains('h1', 'Apply for a role');
         self::assertSelectorTextContains('body', 'Backend Developer');
         self::assertSelectorTextContains('body', 'Frontend Developer');
@@ -64,9 +67,12 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
         self::assertSame(1, $this->countApplications());
         self::assertCount(1, $this->transport()->getSent());
 
+        self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
         $crawler = $this->client->followRedirect();
+        self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
+        self::assertResponseHeaderSame('Referrer-Policy', 'no-referrer');
         self::assertSelectorTextContains('h1', 'Application received');
-        self::assertStringContainsString('analysis is pending and has been queued', $crawler->text());
+        self::assertStringContainsString('Mock analysis is pending', $crawler->text());
     }
 
     public function testInvalidFieldsRenderErrorsAndPreserveSubmittedValuesWithoutUsingSession(): void
@@ -114,6 +120,17 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertFalse($this->client->getResponse()->isRedirection());
+        self::assertResponseHeaderSame('Cache-Control', 'no-store, private');
+        self::assertResponseHeaderSame('Referrer-Policy', 'no-referrer');
+        self::assertSelectorExists('#validation-summary[tabindex="-1"]');
+        foreach (['fullName', 'email', 'jobId', 'cvText'] as $name) {
+            $id = 'application_submission_'.$name;
+            self::assertSelectorExists('#validation-summary a[href="#'.$id.'"]');
+            self::assertSelectorExists('#'.$id.'[aria-invalid="true"]');
+            self::assertSelectorExists('#'.$id.'[aria-describedby="'.$id.'_error1"]');
+            self::assertSelectorExists('#'.$id.'_errors li');
+        }
+
         self::assertStringContainsString('Enter your full name.', $crawler->text());
         self::assertStringContainsString('Enter your email address.', $crawler->text());
         self::assertStringContainsString('Choose a job.', $crawler->text());
@@ -126,6 +143,22 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
         $session = $this->client->getRequest()->getSession();
         self::assertInstanceOf(FlashBagAwareSessionInterface::class, $session);
         self::assertSame([], $session->getFlashBag()->peek('application_submission'));
+    }
+
+    public function testEmailRejectedByExistingDomainRulesReturnsFieldValidationInsteadOf500(): void
+    {
+        $crawler = $this->client->request('GET', '/apply');
+        $form = $crawler->selectButton('Submit application')->form([
+            'application_submission[fullName]' => 'Fictional Candidate',
+            'application_submission[email]' => str_repeat('a', 65).'@example.test',
+            'application_submission[jobId]' => 'backend-developer',
+            'application_submission[cvText]' => 'Fictional CV',
+        ]);
+        $this->client->submit($form);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('#application_submission_email_errors', 'Enter a valid email address.');
+        self::assertSelectorExists('#validation-summary a[href="#application_submission_email"]');
+        self::assertSame(0, $this->countApplications());
     }
 
     public function testEveryTextLimitIsEnforcedByTheForm(): void
@@ -174,6 +207,8 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('csrf token is invalid', strtolower($crawler->text()));
+        self::assertSelectorExists('#validation-summary');
+        self::assertSelectorNotExists('#validation-summary a[href*="_token"]');
         self::assertStringNotContainsString('Enter your full name.', $crawler->text());
         self::assertSame(0, $this->countApplications());
     }
@@ -190,8 +225,8 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
         $document = $this->firstApplication();
         self::assertSame('pending', $document->enrichmentStatus);
         $crawler = $this->client->followRedirect();
-        self::assertStringContainsString('could not be queued automatically', $crawler->text());
-        self::assertStringContainsString('without submitting it again', $crawler->text());
+        self::assertStringContainsString('automatic analysis could not be started', $crawler->text());
+        self::assertStringContainsString('do not need to submit it again', $crawler->text());
     }
 
     private function submitValidForm(): Crawler

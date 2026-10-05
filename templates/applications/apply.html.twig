@@ -2,7 +2,10 @@
 
 {% block title %}Apply for a role{% endblock %}
 
+{% block scripts %}<script type="module" src="/scripts/application.js"></script>{% endblock %}
+
 {% block body %}
+    {% form_theme form 'applications/_submission_form_theme.html.twig' %}
     <header>
         <p class="eyebrow">Viterbit careers</p>
         <h1>Apply for a role</h1>
@@ -24,7 +27,19 @@
     <section aria-labelledby="application-form">
         <h2 id="application-form">Your application</h2>
         {{ form_start(form, {attr: {novalidate: 'novalidate'}}) }}
-            {{ form_errors(form) }}
+            <p class="help">Fields marked required must be completed. Paste your CV as plain text; files are not accepted.</p>
+            {% if form.vars.submitted and not form.vars.valid %}
+                <div id="validation-summary" class="validation-summary" tabindex="-1" aria-labelledby="validation-title">
+                    <h2 id="validation-title">Check your application</h2>
+                    <p>Correct the following errors and submit again.</p>
+                    <ul>
+                        {% for error in form.vars.errors %}<li>{{ error.message }}</li>{% endfor %}
+                        {% for field in [form.fullName, form.email, form.phone, form.jobId, form.notes, form.cvText] %}
+                            {% for error in field.vars.errors %}<li><a href="#{{ field.vars.id }}">{{ field.vars.label }}: {{ error.message }}</a></li>{% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             {{ form_row(form.fullName) }}
             {{ form_row(form.email) }}
             {{ form_row(form.phone) }}
