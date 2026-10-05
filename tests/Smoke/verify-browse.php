@@ -33,7 +33,8 @@ $parameters = ['search' => $correlation, 'job' => 'backend-developer', 'applicat
 $query = http_build_query($parameters, '', '&', \PHP_QUERY_RFC3986);
 $listHtml = $fetch('/applications?'.$query);
 $list = new Crawler($listHtml);
-$row = $list->filter('tr[data-application-id="'.$id.'"]');
+$row = $list->filter('.application-card[data-application-id="'.$id.'"]');
+$assert(1 === $list->filter('#application-results')->count(), 'The refreshable results region was missing.');
 $assert(1 === $row->count(), 'The exact smoke application was not found in the list.');
 $link = $row->filter('a')->attr('href');
 $assert('/applications/'.$id.'?'.$query === $link, 'The exact detail link did not preserve validated filters.');
@@ -43,6 +44,7 @@ if (null === $link) {
 }
 $detailHtml = $fetch($link);
 $detail = new Crawler($detailHtml);
+$assert(1 === $detail->filter('#application-analysis[data-enrichment-status="completed"]')->count(), 'The completed analysis region was missing.');
 $assert(str_contains($detail->text(), 'Mock analysis: Matched 4 of 4 expected skill groups: PHP, Symfony, Databases, REST APIs.'), 'The expected deterministic summary was missing.');
 $assert(str_contains($detail->text(), 'Backend Developer') && str_contains($detail->text(), 'Completed') && str_contains($detail->text(), '100/100'), 'The detail enrichment was incorrect.');
 $marker = '<script>'.$correlation.'</script>';

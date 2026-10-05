@@ -144,8 +144,26 @@ Detail/back links preserve validated filters.
 Completed zero scores display as `0/100`; unfinished analysis has no invented
 result. Original CV and notes remain escaped text with preserved line breaks.
 Job labels come from the current catalogue; a removed job displays its stored
-ID and an unavailable-job label. Automatic filter updates and result polling
-belong to the next UX stage; use Apply filters or refresh to see new results.
+ID and an unavailable-job label.
+
+With JavaScript enabled, select filters update immediately and candidate search
+updates after 300 ms of typing inactivity. Accepted filters appear in the URL;
+Back/Forward restores them. Server-rendered results remain visible if refreshing
+fails, with Try again and an ordinary results-page link.
+
+Lists containing pending/processing applications and active detail pages refresh
+after 3 seconds, then 3 seconds after each completed refresh. Automatic refreshing
+stops when no active analysis remains or after 2 minutes. Hidden tabs pause work
+without extending that deadline. A network error pauses automatic refreshing;
+Try again uses the remaining time. After timeout, Refresh results checks once
+without restarting automatic polling. These controls only refresh displayed
+results; they do not retry analysis.
+
+Without JavaScript, submission works normally, Apply filters submits the GET
+form, and navigation/detail/back links remain ordinary links. Refresh the page
+to check analysis results. The form's linked validation summary and field errors
+are server-rendered; JavaScript additionally focuses the summary after an invalid
+submission.
 
 This unauthenticated evaluator demo displays personal-data fields. Use fictional
 data only and do not expose it publicly with real candidate records. Search
@@ -160,3 +178,31 @@ authentication, access controls, HTTPS, and access-log redaction.
 `make smoke` includes a real form submission through RabbitMQ to list/detail
 verification. It uses a unique fictional correlation, bounded waiting, and
 removes only its exact application ID without purging collections or queues.
+
+## Browser review
+
+The dependency-free assertion harness is **manual browser-launched**, separate
+from `make check`. Start its isolated server:
+
+```bash
+docker compose run --rm --no-deps -p 8081:8001 app \
+  php -S 0.0.0.0:8001 -t tests/Browser tests/Browser/router.php
+```
+
+Open <http://localhost:8081/>. Stop this foreground server with Ctrl+C before
+running `make smoke` or `make check`: concurrent app-service containers can
+affect which container Compose selects for `exec app`.
+
+Every scenario shows PASS/FAIL; failures also appear
+in the console. It imports production modules with injected fetch responses and
+deterministic timers, never calls the application, and uses fictional content.
+No npm packages, extension, or build process is required. PHPUnit does not execute
+JavaScript; `node --check` (when Node is already available) checks syntax only.
+
+Separately review `/apply` and `/applications` at desktop and 375–390px widths,
+with keyboard navigation, JavaScript disabled, and reduced motion. Check error
+summary focus/links, long escaped text, Back/Forward, console/network activity,
+and refresh errors. Observe the real 3-second first poll, no concurrent polls,
+hidden-tab pause, completion/failure/navigation stopping, and full 2-minute
+timeout followed by a manual refresh. Use a unique fictional application and
+clean up only its exact ID. Visual and accessibility verification remains manual.
