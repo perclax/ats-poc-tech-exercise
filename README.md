@@ -35,6 +35,8 @@ docker compose exec -T app php bin/console doctrine:mongodb:schema:update
 URLs:
 
 - Application form: <http://localhost:8080/apply>
+- Application list: <http://localhost:8080/applications>
+- Application detail: <http://localhost:8080/applications/{id}>
 - HTTP health endpoint: <http://localhost:8080/health>
 - RabbitMQ management: <http://localhost:15672> (`ats` / `ats-dev-password`)
 
@@ -103,11 +105,12 @@ docker compose exec -T app php bin/console app:probe:mongodb
 docker compose exec -T app php bin/console app:probe:rabbitmq
 ./tests/Smoke/http.sh
 ./tests/Smoke/enrichment.sh
+./tests/Smoke/browse.sh
 ```
 
 `make check` runs the PHP test suite, PHPStan at level 8, formatting checks,
-focused Compose topology validation, and the live infrastructure and enrichment
-smoke checks.
+focused Compose topology validation, and the live infrastructure, enrichment,
+and browsing smoke checks.
 
 ## Stop the environment
 
@@ -124,3 +127,36 @@ docker compose down
 This stops and removes containers and the project network while preserving the
 MongoDB, RabbitMQ, Composer dependency, and probe named volumes. Do not add `-v`
 unless deletion of local persisted data is intentional.
+
+## Browse applications
+
+Submit a fictional application, follow the confirmation link to its detail,
+then open Applications. Use the GET filter form to combine job, application
+status (`received`), and analysis status (`pending`, `processing`, `completed`,
+`failed`). Search is a case-insensitive Unicode literal substring of candidate
+name or email, limited to 254 characters. Invalid filter values return 400;
+malformed application IDs return 400 and unknown canonical IDs return 404.
+
+The list shows at most 100 newest matches, ordered by `appliedAt` and `_id`
+descending. Narrow the filters to find older applications; there is no
+pagination or total count. Literal substring searches can scan records.
+Detail/back links preserve validated filters.
+Completed zero scores display as `0/100`; unfinished analysis has no invented
+result. Original CV and notes remain escaped text with preserved line breaks.
+Job labels come from the current catalogue; a removed job displays its stored
+ID and an unavailable-job label. Automatic filter updates and result polling
+belong to the next UX stage; use Apply filters or refresh to see new results.
+
+This unauthenticated evaluator demo displays personal-data fields. Use fictional
+data only and do not expose it publicly with real candidate records. Search
+text is a conventional GET parameter: a name or email appears in the URL and
+browser history, and the PHP development server may include the request target
+in its local access log. The application does not log search text, candidate
+records, or CV content; MongoDB query logging and profiling are disabled.
+Browsing responses use `Referrer-Policy: no-referrer` and
+`Cache-Control: private, no-store`. A real deployment must configure
+authentication, access controls, HTTPS, and access-log redaction.
+
+`make smoke` includes a real form submission through RabbitMQ to list/detail
+verification. It uses a unique fictional correlation, bounded waiting, and
+removes only its exact application ID without purging collections or queues.

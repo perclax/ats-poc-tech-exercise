@@ -26,6 +26,7 @@ smoke:
 	$(COMPOSE) exec -T app php bin/console app:probe:rabbitmq
 	./tests/Smoke/http.sh
 	./tests/Smoke/enrichment.sh
+	./tests/Smoke/browse.sh
 
 check: test analyse lint smoke
 

@@ -1,0 +1,8 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Application unavailable{% endblock %}
+
+{% block body %}
+    <h1>{{ message }}</h1>
+    <p><a href="{{ path('application_list') }}">Back to applications</a></p>
+{% endblock %}

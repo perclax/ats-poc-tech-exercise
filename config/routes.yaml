@@ -12,3 +12,13 @@ application_submitted:
     path: /apply/submitted/{applicationId}
     controller: App\Applications\Presentation\Http\ApplicationSubmissionController::submitted
     methods: [GET]
+
+application_list:
+    path: /applications
+    controller: App\Applications\Presentation\Http\ApplicationBrowseController::list
+    methods: [GET]
+
+application_detail:
+    path: /applications/{id}
+    controller: App\Applications\Presentation\Http\ApplicationBrowseController::detail
+    methods: [GET]

@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Applications{% endblock %}
+
+{% block body %}
+    <h1>Applications</h1>
+    <p>Showing up to 100 newest matching applications. Narrow your filters to find older applications.</p>
+    <form method="get" action="{{ path('application_list') }}" class="filters">
+        <div>
+            <label for="search">Candidate name or email</label>
+            <input id="search" name="search" value="{{ parameters.values.search }}" maxlength="254"{% if parameters.errors.search is defined %} aria-invalid="true" aria-describedby="search-error"{% endif %}>
+            {% if parameters.errors.search is defined %}<p id="search-error" class="field-error">{{ parameters.errors.search }}</p>{% endif %}
+        </div>
+        <div>
+            <label for="job">Job</label>
+            <select id="job" name="job"{% if parameters.errors.job is defined %} aria-invalid="true" aria-describedby="job-error"{% endif %}>
+                <option value="">All jobs</option>
+                {% for job in jobs %}<option value="{{ job.id }}"{% if parameters.values.job == job.id %} selected{% endif %}>{{ job.title }}</option>{% endfor %}
+            </select>
+            {% if parameters.errors.job is defined %}<p id="job-error" class="field-error">{{ parameters.errors.job }}</p>{% endif %}
+        </div>
+        <div>
+            <label for="applicationStatus">Application status</label>
+            <select id="applicationStatus" name="applicationStatus"{% if parameters.errors.applicationStatus is defined %} aria-invalid="true" aria-describedby="applicationStatus-error"{% endif %}>
+                <option value="">All application statuses</option>
+                <option value="received"{% if parameters.values.applicationStatus == 'received' %} selected{% endif %}>Received</option>
+            </select>
+            {% if parameters.errors.applicationStatus is defined %}<p id="applicationStatus-error" class="field-error">{{ parameters.errors.applicationStatus }}</p>{% endif %}
+        </div>
+        <div>
+            <label for="enrichmentStatus">Analysis status</label>
+            <select id="enrichmentStatus" name="enrichmentStatus"{% if parameters.errors.enrichmentStatus is defined %} aria-invalid="true" aria-describedby="enrichmentStatus-error"{% endif %}>
+                <option value="">All analysis statuses</option>
+                {% for value in ['pending', 'processing', 'completed', 'failed'] %}<option value="{{ value }}"{% if parameters.values.enrichmentStatus == value %} selected{% endif %}>{{ value|capitalize }}</option>{% endfor %}
+            </select>
+            {% if parameters.errors.enrichmentStatus is defined %}<p id="enrichmentStatus-error" class="field-error">{{ parameters.errors.enrichmentStatus }}</p>{% endif %}
+        </div>
+        <button type="submit">Apply filters</button>
+        <a href="{{ path('application_list') }}">Clear filters</a>
+    </form>
+    {% if parameters.errors is not empty %}
+        <p role="alert">Correct the filter errors to view applications.</p>
+    {% elseif applications is empty %}
+        <p class="empty-state">No applications found.</p>
+    {% else %}
+        <div class="table-scroll" role="region" aria-label="Application results" tabindex="0">
+            <table>
+                <caption>Newest matching applications</caption>
+                <thead><tr><th scope="col">Candidate</th><th scope="col">Job</th><th scope="col">Application status</th><th scope="col">Analysis status</th><th scope="col">Applied (UTC)</th><th scope="col">Mock analysis score</th></tr></thead>
+                <tbody>
+                {% for application in applications %}
+                    <tr data-application-id="{{ application.id }}">
+                        <td><a href="{{ path('application_detail', parameters.linkParameters|merge({id: application.id})) }}">{{ application.candidateName }}</a><br>{{ application.candidateEmail }}</td>
+                        <td>{{ application.jobTitle }}</td>
+                        <td>{{ application.applicationStatus.value|capitalize }}</td>
+                        <td>{{ application.enrichmentStatus.value|capitalize }}</td>
+                        <td><time datetime="{{ application.appliedAt|date('c', 'UTC') }}">{{ application.appliedAt|date('Y-m-d H:i:s', 'UTC') }}</time></td>
+                        <td>{% if application.score is not null %}{{ application.score }}/100{% elseif application.enrichmentStatus.value == 'failed' %}Not available{% else %}Not available yet{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+    <p>Mock analysis scores reflect simulated skill matching, not professional suitability.</p>
+{% endblock %}
