@@ -11,3 +11,21 @@ button { background: #244ac7; border: 0; border-radius: .4rem; color: white; cur
 ul { color: #a11c31; }
 .warning { border-color: #d99112; }
 @media (max-width: 40rem) { .jobs { grid-template-columns: 1fr; } }
+
+nav { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+a { color: #244ac7; }
+h1 { overflow-wrap: anywhere; }
+.field-error { color: #a11c31; }
+.table-scroll { overflow-x: auto; margin: 1.5rem 0; }
+table { border-collapse: collapse; width: 100%; background: white; }
+caption { text-align: left; font-weight: 700; margin-bottom: .75rem; }
+th, td { text-align: left; vertical-align: top; padding: .75rem; border-bottom: 1px solid #dce2eb; overflow-wrap: anywhere; }
+th { min-width: 6rem; }
+th:first-child { min-width: 12rem; }
+dl { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(0, 3fr); gap: .75rem; }
+dt { font-weight: 700; }
+dd { margin: 0; overflow-wrap: anywhere; }
+.preserved-text { white-space: pre-wrap; overflow-wrap: anywhere; background: white; padding: 1rem; border: 1px solid #dce2eb; border-radius: .5rem; }
+section { margin: 1.5rem 0; }
+:focus-visible { outline: 3px solid #244ac7; outline-offset: 3px; }
+@media (max-width: 40rem) { dl { grid-template-columns: minmax(0, 1fr); } }

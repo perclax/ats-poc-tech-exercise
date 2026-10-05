@@ -24,6 +24,11 @@ services:
             - { name: messenger.message_handler, from_transport: enrichment_async }
     App\Applications\Application\Command\RecoverEnrichmentsHandler: ~
     App\Applications\Application\Query\ListJobsHandler: ~
+    App\Applications\Application\Query\ListApplicationsHandler: ~
+    App\Applications\Application\Query\GetApplicationDetailHandler: ~
+
+    App\Applications\Application\Port\ApplicationReadRepository:
+        alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationReadRepository
 
     App\Applications\Application\Port\ApplicationRepository:
         alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationRepository

@@ -27,3 +27,7 @@ services:
     App\Applications\Infrastructure\Messaging\MessengerEnrichmentDispatcher:
         public: true
         autowire: true
+
+    App\Applications\Application\Port\ApplicationReadRepository:
+        alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationReadRepository
+        public: true
