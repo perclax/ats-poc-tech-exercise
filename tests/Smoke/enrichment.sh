@@ -1,0 +1,48 @@
+#!/bin/sh
+set -eu
+
+temporary_directory="$(mktemp -d)"
+application_id=''
+cleanup() {
+    if [ -n "$application_id" ]; then
+        docker compose exec -T app php tests/Smoke/verify-enrichment.php cleanup "$application_id" >/dev/null 2>&1 || true
+    fi
+    rm -rf "$temporary_directory"
+}
+trap cleanup EXIT
+
+base_url='http://localhost:8080'
+correlation="$(docker compose exec -T app php -r 'echo bin2hex(random_bytes(8));')"
+cookie_jar="$temporary_directory/cookies"
+apply_body="$temporary_directory/apply-body"
+response_headers="$temporary_directory/response-headers"
+
+curl --silent --show-error --cookie-jar "$cookie_jar" --output "$apply_body" "$base_url/apply"
+csrf_token="$(sed -n 's/.*name="application_submission\[_token\]".*value="\([^"]*\)".*/\1/p' "$apply_body" | head -1)"
+test -n "$csrf_token"
+
+status="$(curl --silent --show-error \
+    --cookie "$cookie_jar" \
+    --dump-header "$response_headers" \
+    --output "$temporary_directory/submit-body" \
+    --write-out '%{http_code}' \
+    --request POST \
+    --data-urlencode "application_submission[fullName]=Smoke Candidate $correlation" \
+    --data-urlencode "application_submission[email]=smoke-$correlation@example.test" \
+    --data-urlencode 'application_submission[phone]=' \
+    --data-urlencode 'application_submission[jobId]=backend-developer' \
+    --data-urlencode 'application_submission[notes]=Correlation-specific Task 3 smoke application.' \
+    --data-urlencode 'application_submission[cvText]=PHP, Symfony, MongoDB, and REST API.' \
+    --data-urlencode "application_submission[_token]=$csrf_token" \
+    --data-urlencode 'application_submission[submit]=' \
+    "$base_url/apply")"
+test "$status" = '302'
+
+location="$(awk 'BEGIN { IGNORECASE=1 } /^Location:/ { print $2 }' "$response_headers" | tr -d '\r' | tail -1)"
+application_id="$(printf '%s' "$location" | sed -n 's#^.*/apply/submitted/\([0-9a-f-]*\)$#\1#p')"
+test -n "$application_id"
+
+expected_summary='Mock analysis: Matched 4 of 4 expected skill groups: PHP, Symfony, Databases, REST APIs.'
+docker compose exec -T app php tests/Smoke/verify-enrichment.php wait "$application_id" 100 "$expected_summary"
+
+printf 'RabbitMQ-backed application enrichment verified for correlation %s.\n' "$correlation"

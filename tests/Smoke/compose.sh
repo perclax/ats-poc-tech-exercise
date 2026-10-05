@@ -38,4 +38,12 @@ test "$healthcheck_count" -eq 4 || {
     exit 1
 }
 
+worker_configuration="$(echo "$configuration" | sed -n '/^  worker:/,/^  [a-z][a-z]*:/p')"
+echo "$worker_configuration" | grep -Fq -- '- infrastructure_async'
+echo "$worker_configuration" | grep -Fq -- '- enrichment_async'
+if echo "$worker_configuration" | grep -Fq -- '- failed'; then
+    echo 'The normal worker must not consume the failure transport.' >&2
+    exit 1
+fi
+
 echo 'Docker Compose topology verified.'

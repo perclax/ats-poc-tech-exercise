@@ -3,6 +3,10 @@ services:
         alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationRepository
         public: true
 
+    App\Applications\Application\Port\ApplicationEnrichmentRepository:
+        alias: App\Applications\Infrastructure\Persistence\Doctrine\DoctrineMongoApplicationEnrichmentRepository
+        public: true
+
     App\Applications\Application\Port\ApplicationIdGenerator:
         class: App\Applications\Infrastructure\Identity\SymfonyUuidV7ApplicationIdGenerator
         public: true
@@ -11,6 +15,10 @@ services:
         class: App\Applications\Infrastructure\Messaging\SymfonyEventPublisher
         public: true
         autowire: true
+
+    App\Applications\Application\Port\CvEnricher:
+        alias: App\Applications\Infrastructure\Enrichment\DeterministicCvEnricher
+        public: true
 
     App\Applications\Application\Command\SubmitApplicationHandler:
         public: true

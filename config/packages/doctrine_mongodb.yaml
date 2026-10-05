@@ -6,6 +6,9 @@ doctrine_mongodb:
     document_managers:
         default:
             auto_mapping: false
+            logging: false
+            profiler:
+                enabled: false
             mappings:
                 Applications:
                     type: attribute

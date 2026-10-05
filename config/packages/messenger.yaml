@@ -1,5 +1,9 @@
 framework:
     messenger:
+        buses:
+            messenger.bus.default:
+                middleware:
+                    - App\Applications\Infrastructure\Messaging\AddEnrichmentHandlerArgumentsMiddleware
         failure_transport: failed
         transports:
             infrastructure_async:
@@ -25,9 +29,23 @@ framework:
                         application_enrichment:
                             binding_keys: [application_enrichment]
                 retry_strategy:
-                    max_retries: 0
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 4000
+                    jitter: 0
             failed:
-                dsn: 'in-memory://'
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: failed_messages
+                        type: direct
+                        default_publish_routing_key: failed_messages
+                    queues:
+                        failed_messages:
+                            binding_keys: [failed_messages]
+                retry_strategy:
+                    max_retries: 0
         routing:
             App\Infrastructure\Probe\RabbitMq\InfrastructureProbeMessage: infrastructure_async
             App\Applications\Application\Command\EnrichApplication: enrichment_async

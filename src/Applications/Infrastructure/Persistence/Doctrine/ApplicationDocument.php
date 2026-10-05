@@ -7,6 +7,8 @@ namespace App\Applications\Infrastructure\Persistence\Doctrine;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as ODM;
 
 #[ODM\Document(collection: 'applications')]
+#[ODM\Index(keys: ['enrichmentStatus' => 'asc', 'processingStartedAt' => 'asc'], name: 'enrichment_recovery_stale')]
+#[ODM\Index(keys: ['enrichmentStatus' => 'asc', 'id' => 'asc'], name: 'enrichment_recovery_pending')]
 final class ApplicationDocument
 {
     public function __construct(
@@ -36,6 +38,10 @@ final class ApplicationDocument
         public \DateTimeImmutable $appliedAt,
         #[ODM\Field(type: 'date_immutable', nullable: true)]
         public ?\DateTimeImmutable $enrichedAt,
+        #[ODM\Field(type: 'date_immutable', nullable: true)]
+        public ?\DateTimeImmutable $processingStartedAt = null,
+        #[ODM\Field(type: 'string', nullable: true)]
+        public ?string $processingAttemptId = null,
     ) {
     }
 }
