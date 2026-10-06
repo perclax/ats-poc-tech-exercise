@@ -30,4 +30,13 @@ if grep -Eiq 'fatal error|callable object expected|invalid return value' "$tempo
     exit 1
 fi
 
-echo 'Live HTTP routing verified: CSS 200, application 200, health 200, missing asset 404.'
+nul_status="$(curl --silent --show-error --output "$temporary_directory/nul-body" --write-out '%{http_code}' "$base_url/applications?search=a%00b")"
+test "$nul_status" = '400'
+grep -Fq 'Search contains an invalid character.' "$temporary_directory/nul-body"
+tr -d '\000' < "$temporary_directory/nul-body" > "$temporary_directory/nul-body-without-nul"
+if ! cmp -s "$temporary_directory/nul-body" "$temporary_directory/nul-body-without-nul"; then
+    echo 'The invalid search response contains a raw NUL.' >&2
+    exit 1
+fi
+
+echo 'Live HTTP routing verified: CSS 200, application 200, health 200, missing asset 404, embedded-NUL search 400.'

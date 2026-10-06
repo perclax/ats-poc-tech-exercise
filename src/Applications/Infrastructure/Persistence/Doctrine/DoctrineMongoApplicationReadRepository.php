@@ -54,8 +54,8 @@ final readonly class DoctrineMongoApplicationReadRepository implements Applicati
             $filter['enrichmentStatus'] = $criteria->enrichmentStatus->value;
         }
         if (null !== $criteria->search && '' !== $criteria->search) {
-            if (!mb_check_encoding($criteria->search, 'UTF-8') || mb_strlen($criteria->search, 'UTF-8') > 254) {
-                throw new \InvalidArgumentException('Search must be valid UTF-8 and at most 254 characters.');
+            if (!mb_check_encoding($criteria->search, 'UTF-8') || str_contains($criteria->search, "\0") || mb_strlen($criteria->search, 'UTF-8') > 254) {
+                throw new \InvalidArgumentException('Search must be valid UTF-8, contain no NUL, and be at most 254 characters.');
             }
             $literal = new Regex(preg_quote($criteria->search), 'iu');
             $filter['$or'] = [['candidateFullName' => $literal], ['candidateEmail' => $literal]];

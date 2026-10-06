@@ -65,7 +65,7 @@ final class VersionControlledJobCatalog implements JobCatalog
             new SkillGroup('PHP', ['php']),
             new SkillGroup('Symfony', ['symfony']),
             new SkillGroup('Databases', ['database', 'databases', 'sql', 'mongodb']),
-            new SkillGroup('REST APIs', ['rest api', 'restful']),
+            new SkillGroup('REST APIs', ['rest api', 'rest apis', 'restful']),
         ];
     }
 

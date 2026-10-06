@@ -58,7 +58,7 @@ final class VersionControlledJobCatalogTest extends TestCase
             array_map(static fn ($group): string => $group->name, $frontend->skillGroups),
         );
         self::assertSame([...$backend->skillGroups, ...$frontend->skillGroups], $fullstack->skillGroups);
-        self::assertSame(['rest api', 'restful'], $backend->skillGroups[3]->aliases);
+        self::assertSame(['rest api', 'rest apis', 'restful'], $backend->skillGroups[3]->aliases);
         self::assertSame(['javascript', 'typescript'], $frontend->skillGroups[0]->aliases);
         self::assertSame(['react', 'reactjs', 'react.js'], $frontend->skillGroups[1]->aliases);
         self::assertSame(['html', 'html5'], $frontend->skillGroups[2]->aliases);

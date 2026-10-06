@@ -63,6 +63,12 @@ writing; a conflict is preserved and makes the command fail without creating
 any missing records. Open the Applications page and search for `Demo` to inspect
 the records.
 
+The seeded pending application is created without an enrichment message and
+intentionally remains pending. To advance it, stop the worker and run the
+recovery command documented below before starting the worker again. If the
+application has already progressed through the valid enrichment flow, rerunning
+the seed command accepts its current state and does not reset it to pending.
+
 The committed credentials are local development defaults only. If they are
 changed for local use, keep the RabbitMQ container values and
 `MESSENGER_TRANSPORT_DSN` consistent.
