@@ -184,6 +184,89 @@ receipts. Dependencies are reinstalled and the four demos are recreated.
 Source files, Git data, Docker images, and other Compose projects' volumes are
 preserved. No interactive confirmation is requested.
 
+## Native execution (unverified alternative)
+
+Docker is the recommended and verified setup for this exercise. It was chosen
+for convenience and reproducibility, and to avoid requiring PHP, Composer,
+MongoDB, RabbitMQ, and PHP extensions on the host, not because the application
+depends on Docker. The native path below is for developers who already maintain
+the required services locally. It was not executed as part of the verified
+delivery path.
+
+Native execution requires PHP 8.4.x, Composer 2.8.x, the `amqp`, `mongodb`,
+`intl`, `ctype`, and `iconv` PHP extensions, MongoDB 8, and RabbitMQ 4. MongoDB
+and RabbitMQ must already be installed, configured, and running.
+
+Symfony loads the uncommitted `.env.local` file after `.env`, so it can override
+the Docker-oriented service hostnames. For example:
+
+```dotenv
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB=ats
+MESSENGER_TRANSPORT_DSN=amqp://guest:guest@127.0.0.1:5672/%2f/messages
+PROBE_RECEIPT_DIRECTORY=var/probes
+DEFAULT_URI=http://127.0.0.1:8080
+```
+
+This example assumes MongoDB without authentication and RabbitMQ's local
+`guest` user on the default `/` vhost. Adapt the DSNs when using authentication
+or a custom vhost. Do not commit `.env.local`; values such as `APP_SECRET` may
+continue to come from `.env`.
+
+Install dependencies and initialize the transports, MongoDB schema, and demo
+data:
+
+```bash
+composer install
+php bin/console messenger:setup-transports
+php bin/console doctrine:mongodb:schema:update
+php bin/console app:applications:seed-demo --if-empty
+```
+
+Conditional seeding creates the four fictional demo applications only when the
+applications collection is empty. Start the web server and leave its terminal
+running:
+
+```bash
+php -S 127.0.0.1:8080 -t public public/router.php
+```
+
+In a second terminal, start the worker with a separate cache directory:
+
+```bash
+APP_CACHE_DIR="$PWD/var/cache/worker" \
+php bin/console messenger:consume infrastructure_async enrichment_async \
+    --time-limit=3600 \
+    --memory-limit=128M \
+    --no-interaction
+```
+
+The long-running worker must use a cache separate from the web application so
+it does not retain references to compiled container files pruned by web-side
+cache rebuilds. The environment-assignment syntax above assumes a
+POSIX-compatible shell; other shells must set the same variable using their
+native syntax.
+
+Run the PHP tests and quality tools natively with:
+
+```bash
+APP_ENV=test APP_DEBUG=1 MONGODB_DB=ats_test php vendor/bin/phpunit
+php vendor/bin/phpstan analyse
+php vendor/bin/php-cs-fixer check --diff
+```
+
+PHPUnit still requires the isolated `ats_test` MongoDB database, while its
+Messenger transports remain in memory. Docker-specific smoke scripts and
+`make check` are outside this documented native path.
+
+Stop the PHP server and worker in their terminals. MongoDB and RabbitMQ
+lifecycle management depends on the local installation. There is deliberately
+no native equivalent of `make hard-reset`, because a generic command could
+delete MongoDB databases or RabbitMQ data belonging to other projects.
+
+The `make init`, `make down`, `make hard-reset`, `make smoke`, and `make check`
+commands remain Docker-oriented.
+
 ## Browse applications
 
 Submit a fictional application, follow the confirmation link to its detail,
