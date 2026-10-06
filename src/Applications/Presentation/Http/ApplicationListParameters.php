@@ -38,6 +38,11 @@ final readonly class ApplicationListParameters
                 $values[$name] = '';
                 continue;
             }
+            if ('search' === $name && str_contains($value, "\0")) {
+                $errors[$name] = 'Search contains an invalid character.';
+                $values[$name] = '';
+                continue;
+            }
             $values[$name] = trim($value);
         }
 

@@ -89,6 +89,7 @@ final class DoctrineMongoApplicationReadRepositoryTest extends KernelTestCase
         yield 'metacharacters' => ['.*+?^${}()|[]', '.*+?^${}()|[]'];
         yield 'backslashes' => ['C:\\Candidates\\Demo', 'c:\\candidates\\demo'];
         yield 'flags' => ['(?i).* /iu', '(?i).* /iu'];
+        yield 'internal tab' => ["Platform\tEngineer", "platform\tengineer"];
     }
 
     #[DataProvider('invalidSearches')]
@@ -102,6 +103,7 @@ final class DoctrineMongoApplicationReadRepositoryTest extends KernelTestCase
     public static function invalidSearches(): iterable
     {
         yield 'invalid UTF-8' => ["\xFF"];
+        yield 'embedded NUL' => ["a\0b"];
         yield 'too long' => [str_repeat('á', 255)];
     }
 

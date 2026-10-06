@@ -39,6 +39,21 @@ final class DeterministicCvEnricherTest extends TestCase
             25,
             'Mock analysis: Matched 1 of 4 expected skill groups: REST APIs.',
         ];
+        yield 'plural alias is case insensitive and boundary safe' => [
+            'Built services around (rEsT APIs), with documented contracts.',
+            25,
+            'Mock analysis: Matched 1 of 4 expected skill groups: REST APIs.',
+        ];
+        yield 'REST aliases count their group once' => [
+            'Delivered REST API, REST APIs, and RESTful endpoints.',
+            25,
+            'Mock analysis: Matched 1 of 4 expected skill groups: REST APIs.',
+        ];
+        yield 'unrelated rest does not match' => [
+            'Documented the rest of the project.',
+            0,
+            'Mock analysis: Matched 0 of 4 expected skill groups.',
+        ];
         yield 'all groups' => [
             'PHP Symfony SQL and RESTful services.',
             100,

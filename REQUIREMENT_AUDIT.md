@@ -22,8 +22,46 @@ verification, and the final browser review.
 
 CV excerpts were deliberately excluded by explicit user decision: the exercise
 does not require them, and the original CV remains available in the detail view.
-No summary format, matching, aliases, scoring, smoke expected summaries, or
-existing completed application results were changed.
+No summary format, scoring, smoke expected summaries, or existing completed
+application results were changed.
+
+## Post-audit corrections
+
+An independent final audit found and corrected four issues on 2026-10-06:
+
+- The app and Messenger worker had shared `/app/var/cache/dev`. Existing runtime
+  evidence showed `RestartCount=3` and a worker failure caused by a missing
+  generated container file under that directory. The worker now uses the stable
+  `/app/var/cache/worker` override, while the app remains on
+  `/app/var/cache/dev` and tests remain on `/app/var/cache/test`. The override is
+  lexically restricted to a child of the project cache directory and does not
+  depend on the target already existing.
+- The Backend Developer REST skill group now recognizes the explicit `rest api`,
+  `rest apis`, and `restful` aliases. Boundary-aware matching remains unchanged:
+  mixed case and punctuation match, all aliases still count the group once, and
+  `the rest of the project` does not match.
+- README now explains why the seeded pending application has no queued message,
+  how to advance it through recovery while workers are stopped, and why reseeding
+  preserves a valid progressed state.
+- Application-list search rejects an embedded NUL at the HTTP parameter boundary
+  and repeats the guard in the read repository. The exact
+  `/applications?search=a%00b` request returns 400, executes no read query, and
+  emits no raw NUL. Existing accepted search characters remain covered.
+
+After the worker was recreated once to apply its dedicated cache configuration,
+the same container survived five app cache clear/warmup and console/HTTP cycles,
+the RabbitMQ probe, real asynchronous application enrichment, `make smoke`, and
+two consecutive `make check` runs. Its identity remained
+`5c5b3d3a505eba9d59e6541c3289727a7c505d45197d4d814a645a63c3410c8f`,
+`StartedAt=2026-10-06T13:19:54.119846417Z`, and `RestartCount=0`; post-fix logs
+contained the normal Messenger startup entry and no missing-container-file
+error.
+
+The post-audit regression result was 188 tests with 1,175 assertions, PHPStan
+level 8 with no errors, no formatting changes required, and passing Compose
+topology, MongoDB, RabbitMQ, HTTP, enrichment, and browsing smoke checks. Strict
+Composer validation, the locked dependency audit, changed-PHP syntax checks,
+all smoke-script syntax checks, and JavaScript module syntax checks also passed.
 
 ## Security and dependency review
 
@@ -44,7 +82,7 @@ existing completed application results were changed.
   check with `MONGODB_DB=ats` confirmed refusal.
 - Real queued smoke checks passed with exact-ID/correlation cleanup. Cleanup
   errors now fail the smoke run. No collection or queue purge is used.
-- The complete workspace check passed on 2026-10-06: 170 tests with 1,130
+- The complete workspace check passed on 2026-10-06: 188 tests with 1,175
   assertions, PHPStan level 8, formatting, Compose topology, MongoDB and RabbitMQ
   probes, live HTTP, asynchronous enrichment, and browsing smoke checks.
 - The browser harness was launched manually in a browser and passed all 31

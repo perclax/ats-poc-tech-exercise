@@ -34,6 +34,8 @@ services:
 
   worker:
     <<: *php-service
+    environment:
+      APP_CACHE_DIR: /app/var/cache/worker
     command: ["php", "bin/console", "messenger:consume", "infrastructure_async", "enrichment_async", "--time-limit=3600", "--memory-limit=128M", "--no-interaction"]
     depends_on:
       mongodb:

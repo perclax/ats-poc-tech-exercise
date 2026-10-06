@@ -68,6 +68,16 @@ final class ApplicationListParametersTest extends TestCase
         self::assertSame(str_repeat('á', 254), $parameters->criteria->search);
     }
 
+    public function testEmbeddedNulSearchIsRejectedAndNotRetained(): void
+    {
+        $parameters = ApplicationListParameters::fromArray(['search' => "a\0b"], $this->jobs());
+
+        self::assertSame(['search' => 'Search contains an invalid character.'], $parameters->errors);
+        self::assertSame('', $parameters->values['search']);
+        self::assertNull($parameters->criteria->search);
+        self::assertSame([], $parameters->linkParameters());
+    }
+
     /** @return list<JobView> */
     private function jobs(): array
     {

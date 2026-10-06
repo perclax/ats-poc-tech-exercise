@@ -146,6 +146,22 @@ final class ApplicationBrowseControllerTest extends WebTestCase
         yield 'too long' => [['search' => str_repeat('á', 255)]];
     }
 
+    public function testEncodedEmbeddedNulReturns400WithoutQueryingOrRenderingIt(): void
+    {
+        $repository = $this->createMock(ApplicationReadRepository::class);
+        $repository->expects(self::never())->method('search');
+        $repository->expects(self::never())->method('findDetail');
+        self::getContainer()->set(ApplicationReadRepository::class, $repository);
+
+        $crawler = $this->client->request('GET', '/applications?search=a%00b');
+
+        self::assertResponseStatusCodeSame(400);
+        self::assertSelectorTextContains('#search-error', 'Search contains an invalid character.');
+        self::assertSame('', $crawler->filter('#search')->attr('value'));
+        self::assertStringNotContainsString("\0", (string) $this->client->getResponse()->getContent());
+        self::assertCount(0, $crawler->filter('.application-card'));
+    }
+
     public function testEmptyResultsAndUnfilteredList(): void
     {
         $this->client->request('GET', '/applications');
