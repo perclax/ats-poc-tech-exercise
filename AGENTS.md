@@ -108,9 +108,9 @@ The event and asynchronous command carry only the application identifier. Do not
 
 Set enrichment to `processing` when work begins. For a transient failure, return it to `pending` and allow three retries in addition to the initial attempt. Once all retries are exhausted, mark it `failed` and retain the application. Integrate this transition with Messenger failure handling; do not mark the application as failed on every attempt. Show a clear user-facing status and log technical details without logging CV or contact data.
 
-Ignore messages for already completed applications. Prevent concurrent message deliveries from producing incompatible writes by using an atomic processing claim or an equivalent mechanism. A read-check followed by save is insufficient under concurrency.
+Ignore messages for applications that are not pending. Prevent concurrent message deliveries from producing incompatible writes with an atomic `pending` → `processing` claim; a read-check followed by save is insufficient under concurrency. Do not add per-attempt ownership tracking.
 
-Do not implement an outbox for this PoC. Persistence and publication are not atomic. Document that limitation and retain the application when publication fails. Provide a manual recovery command that redispatches pending applications and stale processing applications using a configurable age threshold. Document that it must run while workers are stopped. Do not claim exactly-once delivery.
+Do not implement an outbox or a recovery command for this PoC. Persistence and publication are not atomic, and a worker crash can leave an application in `processing`. Document both limitations and retain the application when publication fails. Do not claim exactly-once delivery.
 
 ## Commands, queries, and events
 
@@ -152,7 +152,7 @@ Add tests proportionate to each stage:
 
 - Unit tests for invariants, state transitions, mock scoring, and use cases.
 - Integration tests for persistence, filters, forms, and messaging.
-- When implemented, verify persistence before enrichment, successful results, retries, duplicate delivery, concurrent claims, and recovery.
+- Verify persistence before enrichment, successful results, retries, and duplicate or concurrent claims.
 - Isolate test databases and queues from demo data.
 - Do not rely on arbitrary sleeps. When real asynchronous behavior is tested, use bounded polling for an observable condition.
 
@@ -162,27 +162,15 @@ The project must provide these commands:
 - `make test`: run PHPUnit.
 - `make analyse`: run PHPStan.
 - `make lint`: check formatting without modifying files.
+- `make smoke`: run the end-to-end check (form submission through RabbitMQ to a completed analysis).
 - `make check`: run all checks and fail if any check fails.
 - `make down`: stop services without deleting volumes.
 
-These commands describe the agreed target and may not exist before Task 0. Update this file if their contract changes. Never report a check as passing when it could not run or when no meaningful tests were executed.
+Update this file if their contract changes. Never report a check as passing when it could not run or when no meaningful tests were executed.
 
-## Staged delivery
+## Scope discipline
 
-The detailed implementation plan, task boundaries, dependencies, and acceptance
-criteria live in [`PLAN.md`](PLAN.md). Treat that file as the project roadmap.
-Work on one task at a time and do not begin the next task until the current task
-meets its acceptance criteria or the user explicitly changes the order.
-
-0. Bootstrap the project, Docker services, dependencies, and quality tools.
-1. Implement domain concepts and ports progressively with real use cases; avoid empty speculative classes.
-2. Implement submission, validation, persistence, and event dispatch.
-3. Implement asynchronous enrichment, mock scoring, states, and recovery.
-4. Implement list, filters, search, and detail.
-5. Complete UX states and result refresh behavior.
-6. Run full verification, add demo fixtures, and prepare delivery documentation.
-
-For Task 0, verify the HTTP response, MongoDB and RabbitMQ connectivity, and one technical message travelling through the queue to a consumer. Do not implement business behavior merely to demonstrate infrastructure. Add meaningful smoke tests.
+The exercise is complete. Keep changes proportionate to the exercise statement: prefer removing complexity over adding infrastructure, diagnostics, or resilience features it does not ask for.
 
 Before editing, inspect the repository and present a short plan for the active task. Preserve existing user changes. Work in reviewable steps and run relevant checks. Do not add dependencies or features outside the active scope. When blocked, explain the issue and choose the simplest alternative compatible with the requirements.
 
@@ -190,4 +178,4 @@ At completion, report changes, commands run, results, and outstanding limits. Do
 
 ## Documentation and delivery
 
-Keep the README concise and evaluator-focused: host requirements, clean-clone startup, application URL, tests, equivalent Compose commands, and a short demo flow. Record assumptions, the mock nature of AI, and message recovery limits. Avoid an exhaustive class-by-class explanation. Do not commit secrets, `vendor`, caches, volumes, or real personal data.
+Keep the README concise and evaluator-focused: host requirements, clean-clone startup, application URL, tests, equivalent Compose commands, and a short demo flow. Record assumptions, the mock nature of AI, and messaging limitations. Avoid an exhaustive class-by-class explanation. Do not commit secrets, `vendor`, caches, volumes, or real personal data.
