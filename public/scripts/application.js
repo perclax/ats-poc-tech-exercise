@@ -16,13 +16,6 @@ export function focusValidation(document) {
 
 focusValidation(document);
 
-let refresh;
-function initialize() {
-    const deadline = refresh?.deadline;
-    refresh?.destroy();
-    if (!window.fetch || !window.AbortController || !window.DOMParser || !window.history?.pushState) return;
-    refresh = createRefresh({ deadline });
-    refresh?.start();
+if (window.fetch && window.DOMParser) {
+    createRefresh()?.start();
 }
-initialize();
-window.addEventListener('pageshow', (event) => { if (event.persisted) initialize(); });
