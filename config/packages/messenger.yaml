@@ -1,9 +1,5 @@
 framework:
     messenger:
-        buses:
-            messenger.bus.default:
-                middleware:
-                    - App\Applications\Infrastructure\Messaging\AddEnrichmentHandlerArgumentsMiddleware
         failure_transport: failed
         transports:
             enrichment_async:

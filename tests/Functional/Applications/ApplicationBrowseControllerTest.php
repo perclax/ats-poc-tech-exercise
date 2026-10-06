@@ -44,7 +44,6 @@ final class ApplicationBrowseControllerTest extends WebTestCase
                 'enrichmentScore' => 'completed' === $state ? 0 : null,
                 'enrichmentSummary' => 'completed' === $state ? 'Mock analysis: No skills detected.' : null,
                 'enrichedAt' => 'completed' === $state ? new UTCDateTime() : null,
-                'processingAttemptId' => 'private-lease', 'processingStartedAt' => new UTCDateTime(),
             ]);
             $ids[] = $document['_id'];
         }
@@ -62,9 +61,6 @@ final class ApplicationBrowseControllerTest extends WebTestCase
             self::assertCount(1, $crawler->filter('a[href^="/applications/'.$id.'"]'));
             $this->client->request('GET', '/applications/'.$id, ['search' => $this->correlation]);
             self::assertResponseIsSuccessful();
-            self::assertStringNotContainsString('private-lease', (string) $this->client->getResponse()->getContent());
-            self::assertStringNotContainsString('processingAttemptId', (string) $this->client->getResponse()->getContent());
-            self::assertStringNotContainsString('processingStartedAt', (string) $this->client->getResponse()->getContent());
         }
         self::assertSame($before, $this->snapshot());
         foreach (['enrichment_async', 'failed'] as $name) {

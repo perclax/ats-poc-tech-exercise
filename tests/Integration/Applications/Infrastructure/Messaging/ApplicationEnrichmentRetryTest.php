@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Applications\Infrastructure\Messaging;
 
 use App\Applications\Application\Command\EnrichApplication;
-use App\Applications\Application\Enrichment\EnrichmentAttemptId;
 use App\Applications\Application\Port\ApplicationRepository;
 use App\Applications\Application\Port\CvEnricher;
 use App\Applications\Domain\Application\Application;
@@ -16,7 +15,6 @@ use App\Applications\Domain\Enrichment\EnrichmentResult;
 use App\Applications\Domain\Enrichment\EnrichmentStatus;
 use App\Applications\Domain\Job\Job;
 use App\Applications\Domain\Job\JobId;
-use App\Applications\Infrastructure\Messaging\EnrichmentAttemptStamp;
 use App\Applications\Infrastructure\Messaging\MessengerEnrichmentDispatcher;
 use App\Tests\Support\MongoDbTestCase;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -31,7 +29,7 @@ use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 
 final class ApplicationEnrichmentRetryTest extends MongoDbTestCase
 {
-    public function testFailureRetriesThreeTimesPreservingAttemptThenFailsTerminally(): void
+    public function testFailureIsRetriedThreeTimesThenMarkedFailed(): void
     {
         $enricher = new AlwaysFailingCvEnricher();
         self::getContainer()->set(CvEnricher::class, $enricher);
@@ -55,15 +53,10 @@ final class ApplicationEnrichmentRetryTest extends MongoDbTestCase
         self::assertInstanceOf(MessengerEnrichmentDispatcher::class, $dispatcher);
         $dispatcher->dispatch(new EnrichApplication($id));
 
-        $attemptId = null;
         for ($delivery = 0; $delivery < 4; ++$delivery) {
             $sent = $transport->getSent();
             self::assertCount(1, $sent);
             $envelope = $sent[0];
-            $stamp = $envelope->last(EnrichmentAttemptStamp::class);
-            self::assertInstanceOf(EnrichmentAttemptStamp::class, $stamp);
-            $attemptId ??= $stamp->attemptId;
-            self::assertSame($attemptId, $stamp->attemptId);
             self::assertSame($delivery, RedeliveryStamp::getRetryCountFromEnvelope($envelope));
             $transport->reset();
 
@@ -81,9 +74,6 @@ final class ApplicationEnrichmentRetryTest extends MongoDbTestCase
         self::assertSame(4, $enricher->calls);
         self::assertCount(0, $transport->getSent());
         self::assertCount(1, $failed->getSent());
-        self::assertSame($attemptId, $failed->getSent()[0]->last(EnrichmentAttemptStamp::class)?->attemptId);
-        self::assertMatchesRegularExpression('/\A[a-f0-9]{32}\z/', (string) $attemptId);
-        new EnrichmentAttemptId((string) $attemptId);
     }
 
     private function handleFailure(Envelope $envelope): HandlerFailedException

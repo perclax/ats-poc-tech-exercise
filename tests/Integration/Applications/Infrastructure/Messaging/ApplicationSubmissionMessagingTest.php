@@ -7,9 +7,7 @@ namespace App\Tests\Integration\Applications\Infrastructure\Messaging;
 use App\Applications\Application\Command\EnrichApplication;
 use App\Applications\Application\Command\SubmitApplication;
 use App\Applications\Application\Command\SubmitApplicationHandler;
-use App\Applications\Infrastructure\Messaging\EnrichmentAttemptStamp;
 use App\Tests\Support\MongoDbTestCase;
-use Symfony\Component\Messenger\Stamp\HandlerArgumentsStamp;
 use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 
 final class ApplicationSubmissionMessagingTest extends MongoDbTestCase
@@ -36,8 +34,6 @@ final class ApplicationSubmissionMessagingTest extends MongoDbTestCase
         $message = $transport->getSent()[0]->getMessage();
         self::assertInstanceOf(EnrichApplication::class, $message);
         self::assertSame($result->applicationId->value, $message->applicationId->value);
-        self::assertInstanceOf(EnrichmentAttemptStamp::class, $transport->getSent()[0]->last(EnrichmentAttemptStamp::class));
-        self::assertNull($transport->getSent()[0]->last(HandlerArgumentsStamp::class));
         self::assertStringNotContainsString('ada@example.test', serialize($message));
         self::assertStringNotContainsString('Private CV text', serialize($message));
     }

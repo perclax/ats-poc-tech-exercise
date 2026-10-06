@@ -162,6 +162,23 @@ final class RecordingRepository implements ApplicationRepository
         }
         $this->saved = $application;
     }
+
+    public function claimForEnrichment(ApplicationId $id): ?Application
+    {
+        return null;
+    }
+
+    public function completeEnrichment(Application $application): void
+    {
+    }
+
+    public function releaseEnrichment(ApplicationId $id): void
+    {
+    }
+
+    public function failEnrichment(ApplicationId $id): void
+    {
+    }
 }
 
 final class RecordingPublisher implements EventPublisher

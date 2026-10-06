@@ -6,14 +6,7 @@ namespace App\Tests\Unit\Applications\Application\Command;
 
 use App\Applications\Application\Command\EnrichApplication;
 use App\Applications\Application\Command\EnrichApplicationHandler;
-use App\Applications\Application\Enrichment\EnrichmentAttemptId;
-use App\Applications\Application\Enrichment\EnrichmentClaim;
-use App\Applications\Application\Enrichment\EnrichmentClaimOutcome;
-use App\Applications\Application\Enrichment\EnrichmentClaimResult;
-use App\Applications\Application\Enrichment\EnrichmentCompletionOutcome;
-use App\Applications\Application\Enrichment\RecoveryCandidate;
-use App\Applications\Application\Exception\EnrichmentOwnershipLost;
-use App\Applications\Application\Port\ApplicationEnrichmentRepository;
+use App\Applications\Application\Port\ApplicationRepository;
 use App\Applications\Application\Port\Clock;
 use App\Applications\Application\Port\CvEnricher;
 use App\Applications\Application\Port\JobCatalog;
@@ -26,7 +19,6 @@ use App\Applications\Domain\Enrichment\EnrichmentStatus;
 use App\Applications\Domain\Job\Job;
 use App\Applications\Domain\Job\JobId;
 use App\Applications\Domain\Job\SkillGroup;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
@@ -34,106 +26,55 @@ final class EnrichApplicationHandlerTest extends TestCase
 {
     private const string ID = '018f47a2-7b3c-7def-8123-123456789abc';
 
-    public function testPendingClaimIsEnrichedAndCompleted(): void
+    public function testClaimedApplicationIsEnrichedAndCompleted(): void
     {
-        $claim = $this->claim(false);
-        $repository = new HandlerEnrichmentRepository(EnrichmentClaimResult::acquired($claim));
+        $repository = new ClaimingApplicationRepository($this->claimedApplication());
         $enricher = new RecordingCvEnricher(new EnrichmentResult('Mock analysis: Matched 1 of 1 expected skill groups: PHP.', 100));
 
-        ($this->handler($repository, $enricher))($this->command(), $this->attempt());
+        ($this->handler($repository, $enricher))($this->command());
 
         self::assertSame(1, $enricher->calls);
         self::assertSame('Private PHP CV', $enricher->receivedCv);
-        self::assertSame(EnrichmentCompletionOutcome::COMPLETED, $repository->completionOutcome);
-        self::assertSame(EnrichmentStatus::COMPLETED, $claim->application->enrichmentStatus());
-        self::assertSame(100, $claim->application->enrichmentResult()?->score);
-        self::assertSame('2026-10-03T10:02:00+00:00', $claim->application->enrichedAt()?->format('c'));
+        $completed = $repository->completed;
+        self::assertNotNull($completed);
+        self::assertSame(EnrichmentStatus::COMPLETED, $completed->enrichmentStatus());
+        self::assertSame(100, $completed->enrichmentResult()?->score);
+        self::assertSame('2026-10-03T10:02:00+00:00', $completed->enrichedAt()?->format('c'));
     }
 
-    public function testSameAttemptResumeRunsEnrichment(): void
+    public function testApplicationThatCannotBeClaimedIsSkipped(): void
     {
-        $claim = $this->claim(true);
-        $repository = new HandlerEnrichmentRepository(EnrichmentClaimResult::acquired($claim));
-        $enricher = new RecordingCvEnricher(new EnrichmentResult('Mock analysis: Matched 0 of 1 expected skill groups.', 0));
-
-        ($this->handler($repository, $enricher))($this->command(), $this->attempt());
-
-        self::assertSame(1, $enricher->calls);
-        self::assertSame(0, $claim->application->enrichmentResult()?->score);
-    }
-
-    #[DataProvider('skippedClaims')]
-    public function testUnknownCompetingAndTerminalMessagesAreDeliberatelySkipped(
-        EnrichmentClaimOutcome $outcome,
-        ?EnrichmentStatus $status,
-    ): void {
-        $repository = new HandlerEnrichmentRepository(EnrichmentClaimResult::skipped($outcome, $status));
+        $repository = new ClaimingApplicationRepository(null);
         $enricher = new RecordingCvEnricher(new EnrichmentResult('Unused', 0));
 
-        ($this->handler($repository, $enricher))($this->command(), $this->attempt());
+        ($this->handler($repository, $enricher))($this->command());
 
         self::assertSame(0, $enricher->calls);
-        self::assertNull($repository->completedClaim);
-    }
-
-    /** @return iterable<string, array{EnrichmentClaimOutcome, ?EnrichmentStatus}> */
-    public static function skippedClaims(): iterable
-    {
-        yield 'unknown' => [EnrichmentClaimOutcome::UNKNOWN, null];
-        yield 'competing' => [EnrichmentClaimOutcome::COMPETING, EnrichmentStatus::PROCESSING];
-        yield 'completed' => [EnrichmentClaimOutcome::COMPLETED, EnrichmentStatus::COMPLETED];
-        yield 'failed' => [EnrichmentClaimOutcome::FAILED, EnrichmentStatus::FAILED];
+        self::assertNull($repository->completed);
     }
 
     public function testEnrichmentFailureIsNotSwallowed(): void
     {
         $failure = new \RuntimeException('controlled enrichment failure');
-        $repository = new HandlerEnrichmentRepository(EnrichmentClaimResult::acquired($this->claim(false)));
-        $enricher = new RecordingCvEnricher(failure: $failure);
+        $repository = new ClaimingApplicationRepository($this->claimedApplication());
 
         $this->expectExceptionObject($failure);
 
-        ($this->handler($repository, $enricher))($this->command(), $this->attempt());
+        ($this->handler($repository, new RecordingCvEnricher(failure: $failure)))($this->command());
     }
 
-    public function testUnexpectedProgrammingExceptionIsNotSwallowed(): void
-    {
-        $failure = new \LogicException('programming defect');
-        $repository = new HandlerEnrichmentRepository(EnrichmentClaimResult::acquired($this->claim(false)));
-        $enricher = new RecordingCvEnricher(failure: $failure);
-
-        $this->expectExceptionObject($failure);
-
-        ($this->handler($repository, $enricher))($this->command(), $this->attempt());
-    }
-
-    public function testOwnershipLossIsVisible(): void
-    {
-        $repository = new HandlerEnrichmentRepository(
-            EnrichmentClaimResult::acquired($this->claim(false)),
-            EnrichmentCompletionOutcome::OWNERSHIP_LOST,
-        );
-
-        $this->expectException(EnrichmentOwnershipLost::class);
-
-        ($this->handler($repository, new RecordingCvEnricher(new EnrichmentResult('Summary', 50))))($this->command(), $this->attempt());
-    }
-
-    private function handler(HandlerEnrichmentRepository $repository, RecordingCvEnricher $enricher): EnrichApplicationHandler
+    private function handler(ClaimingApplicationRepository $repository, RecordingCvEnricher $enricher): EnrichApplicationHandler
     {
         return new EnrichApplicationHandler(
             $repository,
             new HandlerJobCatalog(),
             $enricher,
-            new SequenceClock([
-                new \DateTimeImmutable('2026-10-03T10:01:00+00:00'),
-                new \DateTimeImmutable('2026-10-03T10:02:00+00:00'),
-            ]),
+            new SequenceClock([new \DateTimeImmutable('2026-10-03T10:02:00+00:00')]),
             new NullLogger(),
         );
     }
 
-    private function claim(bool $resumed): EnrichmentClaim
+    private function claimedApplication(): Application
     {
         $application = new Application(
             ApplicationId::fromString(self::ID),
@@ -145,62 +86,48 @@ final class EnrichApplicationHandlerTest extends TestCase
         );
         $application->startEnrichment();
 
-        return new EnrichmentClaim($application, $this->attempt(), $resumed);
+        return $application;
     }
 
     private function command(): EnrichApplication
     {
         return new EnrichApplication(ApplicationId::fromString(self::ID));
     }
-
-    private function attempt(): EnrichmentAttemptId
-    {
-        return new EnrichmentAttemptId('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
-    }
 }
 
-final class HandlerEnrichmentRepository implements ApplicationEnrichmentRepository
+final class ClaimingApplicationRepository implements ApplicationRepository
 {
-    public ?EnrichmentClaim $completedClaim = null;
-    public ?EnrichmentCompletionOutcome $completionOutcome = null;
+    public ?Application $completed = null;
 
-    public function __construct(
-        private readonly EnrichmentClaimResult $claimResult,
-        private readonly EnrichmentCompletionOutcome $configuredCompletion = EnrichmentCompletionOutcome::COMPLETED,
-    ) {
+    public function __construct(private readonly ?Application $claimable)
+    {
     }
 
-    public function claim(ApplicationId $id, EnrichmentAttemptId $attemptId, \DateTimeImmutable $startedAt): EnrichmentClaimResult
+    public function find(ApplicationId $id): ?Application
     {
-        return $this->claimResult;
+        return null;
     }
 
-    public function complete(EnrichmentClaim $claim): EnrichmentCompletionOutcome
+    public function save(Application $application): void
     {
-        $this->completedClaim = $claim;
-        $this->completionOutcome = $this->configuredCompletion;
-
-        return $this->configuredCompletion;
     }
 
-    public function returnOwnedClaimToPending(ApplicationId $id, EnrichmentAttemptId $attemptId): bool
+    public function claimForEnrichment(ApplicationId $id): ?Application
     {
-        return false;
+        return $this->claimable;
     }
 
-    public function markOwnedClaimFailed(ApplicationId $id, EnrichmentAttemptId $attemptId): bool
+    public function completeEnrichment(Application $application): void
     {
-        return false;
+        $this->completed = $application;
     }
 
-    public function recoveryCandidates(\DateTimeImmutable $staleBefore, int $limit): array
+    public function releaseEnrichment(ApplicationId $id): void
     {
-        return [];
     }
 
-    public function resetStaleProcessing(RecoveryCandidate $candidate, \DateTimeImmutable $staleBefore): bool
+    public function failEnrichment(ApplicationId $id): void
     {
-        return false;
     }
 }
 

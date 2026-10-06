@@ -107,13 +107,12 @@ final class DoctrineMongoApplicationReadRepositoryTest extends KernelTestCase
         yield 'too long' => [str_repeat('á', 255)];
     }
 
-    public function testDetailProjectsStoredFieldsAndZeroWithoutLeaseMetadata(): void
+    public function testDetailProjectsStoredFieldsAndZero(): void
     {
         $document = $this->insertApplication([
             'candidatePhone' => '+34 555 0101', 'notes' => "Notes\nSecond line", 'cvText' => "Original <script>CV</script>\nSecond line",
             'enrichmentStatus' => 'completed', 'enrichmentSummary' => 'Mock analysis: Matched 0 of 4 expected skill groups.', 'enrichmentScore' => 0,
             'enrichedAt' => new UTCDateTime(new \DateTimeImmutable('2026-10-05T10:01:00Z')),
-            'processingAttemptId' => 'private-attempt', 'processingStartedAt' => new UTCDateTime(),
         ]);
         $detail = $this->repository->findDetail(ApplicationId::fromString((string) $document['_id']));
         self::assertNotNull($detail);
@@ -134,10 +133,6 @@ final class DoctrineMongoApplicationReadRepositoryTest extends KernelTestCase
         self::assertSame('2026-10-05T10:01:00+00:00', $detail->enrichedAt?->format('c'));
         $item = $this->repository->search(new ApplicationSearchCriteria($this->correlation))[0];
         self::assertSame(0, $item->score);
-        foreach ([$detail, $item] as $dto) {
-            self::assertArrayNotHasKey('processingAttemptId', get_object_vars($dto));
-            self::assertArrayNotHasKey('processingStartedAt', get_object_vars($dto));
-        }
     }
 
     public function testLegacyDocumentsNullableFieldsAndRemovedJobs(): void
@@ -182,8 +177,6 @@ final class DoctrineMongoApplicationReadRepositoryTest extends KernelTestCase
         self::assertSame(['appliedAt' => -1, '_id' => -1], $indexes['applications_newest']);
         self::assertSame(['jobId' => 1, 'appliedAt' => -1, '_id' => -1], $indexes['applications_job_newest']);
         self::assertSame(['enrichmentStatus' => 1, 'appliedAt' => -1, '_id' => -1], $indexes['applications_enrichment_status_newest']);
-        self::assertSame(['enrichmentStatus' => 1, 'processingStartedAt' => 1], $indexes['enrichment_recovery_stale']);
-        self::assertSame(['enrichmentStatus' => 1, '_id' => 1], $indexes['enrichment_recovery_pending']);
         self::assertArrayNotHasKey('applications_application_status_newest', $indexes);
     }
 }

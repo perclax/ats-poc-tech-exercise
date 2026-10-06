@@ -11,10 +11,10 @@ use PHPUnit\Framework\TestCase;
 
 final class ApplicationReadDocumentMapperTest extends TestCase
 {
-    public function testItMapsZeroAndUtcDatesWithoutLeakingTechnicalFields(): void
+    public function testItMapsZeroAndUtcDates(): void
     {
         $mapper = new ApplicationReadDocumentMapper();
-        $document = $this->document() + ['enrichmentScore' => 0, 'processingAttemptId' => 'secret', 'processingStartedAt' => new UTCDateTime()];
+        $document = $this->document() + ['enrichmentScore' => 0];
         $detail = $mapper->toDetail($document, ['backend-developer' => ['title' => 'Backend Developer', 'description' => 'Catalogue description.']]);
         self::assertSame(0, $detail->score);
         self::assertSame('2026-10-05T10:00:00+00:00', $detail->appliedAt->format('c'));
@@ -24,8 +24,6 @@ final class ApplicationReadDocumentMapperTest extends TestCase
         self::assertNull($detail->enrichedAt);
         self::assertSame('Backend Developer', $detail->jobTitle);
         self::assertSame('Catalogue description.', $detail->jobDescription);
-        self::assertStringNotContainsString('secret', serialize($detail));
-        self::assertArrayNotHasKey('processingStartedAt', get_object_vars($detail));
     }
 
     public function testMissingOptionalFieldsAndMissingCatalogueEntriesAreSupported(): void
