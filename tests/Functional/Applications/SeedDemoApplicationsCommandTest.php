@@ -130,6 +130,79 @@ final class SeedDemoApplicationsCommandTest extends MongoDbTestCase
         self::assertEquals(new EnrichmentResult('Mock analysis: Matched 2 of 8 expected skill groups: PHP, React.', 25), $progressed->enrichmentResult());
     }
 
+    public function testConditionalSeedCreatesFourThenSkipsWithoutMessages(): void
+    {
+        $publisher = $this->createMock(EventPublisher::class);
+        $publisher->expects(self::never())->method('publish');
+        self::getContainer()->set(EventPublisher::class, $publisher);
+        $this->resetTransports();
+        $tester = $this->commandTester();
+        self::assertSame(Command::SUCCESS, $tester->execute(['--if-empty' => true]));
+        self::assertStringContainsString('Created: 4', $tester->getDisplay());
+        self::assertSame(4, $this->collection()->countDocuments());
+        $before = $this->collection()->find()->toArray();
+        self::assertSame(Command::SUCCESS, $tester->execute(['--if-empty' => true]));
+        self::assertStringContainsString('skipped', $tester->getDisplay());
+        self::assertEquals($before, $this->collection()->find()->toArray());
+        $this->assertTransportsEmpty();
+    }
+
+    public function testConditionalCommandDelegatesWithoutLoadingOrValidatingReservedRecords(): void
+    {
+        $this->collection()->insertOne(['_id' => self::IDS[0], 'fictionalConflict' => true]);
+        $repository = $this->createMock(ApplicationRepository::class);
+        $repository->expects(self::never())->method('find');
+        $repository->expects(self::never())->method('save');
+        self::getContainer()->set(ApplicationRepository::class, $repository);
+        $tester = $this->commandTester();
+        self::assertSame(Command::SUCCESS, $tester->execute(['--if-empty' => true]));
+        self::assertStringContainsString('skipped', $tester->getDisplay());
+        self::assertSame(1, $this->collection()->countDocuments());
+        $constructor = (new \ReflectionClass(SeedDemoApplicationsCommand::class))->getConstructor();
+        self::assertNotNull($constructor);
+        self::assertCount(1, $constructor->getParameters());
+        self::assertSame(\App\Applications\Infrastructure\Demo\DemoApplicationSeeder::class, (string) $constructor->getParameters()[0]->getType());
+    }
+
+    public function testConditionalSeedSkipsAnOrdinaryApplication(): void
+    {
+        $this->repository()->save(new Application(
+            ApplicationId::fromString('018f47a2-7b3c-7def-8123-123456789abc'),
+            new Candidate('Fictional Ordinary Candidate', new EmailAddress('ordinary@example.test'), null),
+            new JobId('backend-developer'),
+            null,
+            'Fictional PHP demonstration.',
+            new \DateTimeImmutable('2026-10-01T10:03:00Z'),
+        ));
+        $before = $this->collection()->find()->toArray();
+        $tester = $this->commandTester();
+        self::assertSame(Command::SUCCESS, $tester->execute(['--if-empty' => true]));
+        self::assertEquals($before, $this->collection()->find()->toArray());
+        self::assertSame(0, $this->collection()->countDocuments(['_id' => ['$in' => self::IDS]]));
+    }
+
+    public function testConditionalSeedPreservesEveryProgressedState(): void
+    {
+        foreach (['processing', 'completed', 'failed'] as $status) {
+            $this->cleanApplications();
+            self::assertSame(Command::SUCCESS, $this->commandTester()->execute([]));
+            $fields = ['enrichmentStatus' => $status];
+            if ('completed' === $status) {
+                $fields += [
+                    'enrichmentSummary' => 'Mock analysis: Matched 2 of 8 expected skill groups: PHP, React.',
+                    'enrichmentScore' => 25,
+                    'enrichedAt' => new \MongoDB\BSON\UTCDateTime(new \DateTimeImmutable('2026-10-01T10:01:30Z')),
+                ];
+            }
+            $this->collection()->updateOne(['_id' => self::IDS[2]], ['$set' => $fields]);
+            $before = $this->collection()->find()->toArray();
+            $tester = $this->commandTester();
+            self::assertSame(Command::SUCCESS, $tester->execute(['--if-empty' => true]));
+            self::assertStringContainsString('skipped', $tester->getDisplay());
+            self::assertEquals($before, $this->collection()->find()->toArray());
+        }
+    }
+
     private function commandTester(): CommandTester
     {
         $command = self::getContainer()->get(SeedDemoApplicationsCommand::class);

@@ -38,9 +38,12 @@ docker compose run --rm --no-deps app composer install --no-interaction --prefer
 docker compose up -d --wait
 docker compose exec -T app php bin/console messenger:setup-transports
 docker compose exec -T app php bin/console doctrine:mongodb:schema:update
+docker compose exec -T app php bin/console app:applications:seed-demo --if-empty
 ```
 
-`make init` is safe to run again. It neither removes nor resets named volumes.
+`make init` creates the four fictional demo applications only when the entire
+applications collection is empty. Rerunning it never adds demos to a nonempty
+database or resets existing applications or named volumes.
 
 URLs:
 
@@ -50,7 +53,7 @@ URLs:
 - HTTP health endpoint: <http://localhost:8080/health>
 - RabbitMQ management: <http://localhost:15672> (`ats` / `ats-dev-password`)
 
-Create the four deterministic fictional demo applications:
+To add missing demo applications manually, including in a nonempty database:
 
 ```bash
 docker compose exec -T app php bin/console app:applications:seed-demo
@@ -167,6 +170,19 @@ docker compose down
 This stops and removes containers and the project network while preserving the
 MongoDB, RabbitMQ, Composer dependency, and probe named volumes. Do not add `-v`
 unless deletion of local persisted data is intentional.
+
+To return to the four-record fictional factory demo state:
+
+```bash
+make hard-reset
+```
+
+This is destructive: it runs `docker compose down --volumes --remove-orphans`,
+then the initialization commands above. It deletes this Compose project's
+MongoDB application data, RabbitMQ state, Composer vendor volume, and probe
+receipts. Dependencies are reinstalled and the four demos are recreated.
+Source files, Git data, Docker images, and other Compose projects' volumes are
+preserved. No interactive confirmation is requested.
 
 ## Browse applications
 

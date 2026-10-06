@@ -33,6 +33,7 @@ final class DemoApplicationSeederTest extends TestCase
             new VersionControlledJobCatalog(),
             new DeterministicCvEnricher(),
             new ApplicationDocumentMapper(),
+            $this->createStub(\Doctrine\ODM\MongoDB\DocumentManager::class),
         );
 
         $this->expectException(\RuntimeException::class);
