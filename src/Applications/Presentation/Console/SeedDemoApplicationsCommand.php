@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Applications\Presentation\Console;
+
+use App\Applications\Infrastructure\Demo\DemoApplicationSeeder;
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
+
+#[AsCommand(name: 'app:applications:seed-demo', description: 'Create four deterministic fictional demo applications without dispatching enrichment.')]
+final class SeedDemoApplicationsCommand extends Command
+{
+    public function __construct(private readonly DemoApplicationSeeder $seeder)
+    {
+        parent::__construct();
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        try {
+            $report = $this->seeder->seed();
+        } catch (\UnexpectedValueException $exception) {
+            $output->writeln('<error>'.$exception->getMessage().'</error>');
+
+            return self::FAILURE;
+        }
+
+        $output->writeln(\sprintf('Demo seed complete. Created: %d; already present: %d.', $report['created'], $report['alreadyPresent']));
+
+        return self::SUCCESS;
+    }
+}

@@ -6,7 +6,7 @@ application_id=''
 cleanup() {
     cleanup_status=0
     if [ -n "$application_id" ]; then
-        docker compose exec -T app php tests/Smoke/verify-enrichment.php cleanup "$application_id" >/dev/null || cleanup_status=1
+        docker compose exec -T app php tests/Smoke/verify-enrichment.php cleanup "$application_id" "$correlation" >/dev/null || cleanup_status=1
     fi
     rm -rf "$temporary_directory"
     if [ "$cleanup_status" -ne 0 ]; then

@@ -31,6 +31,7 @@ abstract class MongoDbTestCase extends KernelTestCase
     {
         $database = $this->documentManager->getConfiguration()->getDefaultDB();
         self::assertNotNull($database);
+        self::assertSame('ats_test', $database, 'Cleanup requires the isolated test database.');
         $collection = $this->documentManager->getClassMetadata(ApplicationDocument::class)->getCollection();
         $this->documentManager->getClient()->selectCollection($database, $collection)->deleteMany([]);
         $this->documentManager->clear();

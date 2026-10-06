@@ -293,6 +293,7 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
     {
         $database = $this->documentManager->getConfiguration()->getDefaultDB();
         self::assertNotNull($database);
+        self::assertSame('ats_test', $database, 'Cleanup requires the isolated test database.');
 
         return $database;
     }

@@ -6,6 +6,16 @@ The analysis is a deterministic local simulation: it matches explicit job skill
 aliases and does not call an external AI service or assess professional
 suitability.
 
+The summary uses a deterministic template listing detected skill groups. Each
+group contributes once to the rounded percentage score, including a valid zero
+when no expected skills match. Identical inputs produce identical results.
+
+The Applications module separates a framework-independent domain, application
+use cases and ports, infrastructure adapters, and Twig/HTTP presentation.
+Commands persist through MongoDB ODM; queries return view DTOs from MongoDB.
+Symfony events dispatch identifier-only Messenger commands to the separate
+RabbitMQ worker, which uses an atomic claim before processing.
+
 ## Requirements
 
 - Docker with Docker Compose v2
@@ -39,6 +49,19 @@ URLs:
 - Application detail: <http://localhost:8080/applications/{id}>
 - HTTP health endpoint: <http://localhost:8080/health>
 - RabbitMQ management: <http://localhost:15672> (`ats` / `ats-dev-password`)
+
+Create the four deterministic fictional demo applications:
+
+```bash
+docker compose exec -T app php bin/console app:applications:seed-demo
+```
+
+The command is idempotent and dispatches no messages. It demonstrates completed
+100 and zero scores, pending and failed analysis, repeated applications for one
+email, and escaped HTML-like notes. It validates all four reserved IDs before
+writing; a conflict is preserved and makes the command fail without creating
+any missing records. Open the Applications page and search for `Demo` to inspect
+the records.
 
 The committed credentials are local development defaults only. If they are
 changed for local use, keep the RabbitMQ container values and
@@ -111,6 +134,17 @@ docker compose exec -T app php bin/console app:probe:rabbitmq
 `make check` runs the PHP test suite, PHPStan at level 8, formatting checks,
 focused Compose topology validation, and the live infrastructure, enrichment,
 and browsing smoke checks.
+
+PHPUnit refuses any MongoDB database other than `ats_test`. Tests use isolated
+in-memory Messenger transports; live smoke checks use real RabbitMQ and clean up
+only their exact fictional application IDs, verified against their correlation.
+Infrastructure probes remain useful diagnostics and contain no candidate data.
+
+Run the dependency advisory check inside the container:
+
+```bash
+docker compose exec -T app composer audit --locked
+```
 
 ## Stop the environment
 
