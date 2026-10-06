@@ -96,11 +96,6 @@ final class Application
         $this->transitionFrom(EnrichmentStatus::PENDING, EnrichmentStatus::PROCESSING);
     }
 
-    public function returnEnrichmentToPending(): void
-    {
-        $this->transitionFrom(EnrichmentStatus::PROCESSING, EnrichmentStatus::PENDING);
-    }
-
     public function completeEnrichment(EnrichmentResult $result, \DateTimeImmutable $enrichedAt): void
     {
         if (EnrichmentStatus::PROCESSING !== $this->enrichmentStatus) {

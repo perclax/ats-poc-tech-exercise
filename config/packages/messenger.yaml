@@ -1,23 +1,7 @@
 framework:
     messenger:
-        buses:
-            messenger.bus.default:
-                middleware:
-                    - App\Applications\Infrastructure\Messaging\AddEnrichmentHandlerArgumentsMiddleware
         failure_transport: failed
         transports:
-            infrastructure_async:
-                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
-                options:
-                    exchange:
-                        name: infrastructure_probe
-                        type: direct
-                        default_publish_routing_key: infrastructure_probe
-                    queues:
-                        infrastructure_probe:
-                            binding_keys: [infrastructure_probe]
-                retry_strategy:
-                    max_retries: 0
             enrichment_async:
                 dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
                 options:
@@ -47,13 +31,11 @@ framework:
                 retry_strategy:
                     max_retries: 0
         routing:
-            App\Infrastructure\Probe\RabbitMq\InfrastructureProbeMessage: infrastructure_async
             App\Applications\Application\Command\EnrichApplication: enrichment_async
 
 when@test:
     framework:
         messenger:
             transports:
-                infrastructure_async: 'in-memory://'
                 enrichment_async: 'in-memory://'
                 failed: 'in-memory://'

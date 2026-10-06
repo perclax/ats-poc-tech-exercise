@@ -52,17 +52,6 @@ final class ApplicationTest extends TestCase
         self::assertSame($enrichedAt, $application->enrichedAt());
     }
 
-    public function testItCanReturnAProcessingAttemptToPending(): void
-    {
-        $application = $this->application();
-        $application->startEnrichment();
-        $application->returnEnrichmentToPending();
-
-        self::assertSame(EnrichmentStatus::PENDING, $application->enrichmentStatus());
-        self::assertNull($application->enrichmentResult());
-        self::assertNull($application->enrichedAt());
-    }
-
     public function testItCanFailOnlyWhileProcessing(): void
     {
         $application = $this->application();
@@ -81,7 +70,6 @@ final class ApplicationTest extends TestCase
         $this->expectException(InvalidEnrichmentTransition::class);
 
         match ($action) {
-            'pending-to-pending' => $application->returnEnrichmentToPending(),
             'pending-to-completed' => $application->completeEnrichment(new EnrichmentResult('Summary', 50), new \DateTimeImmutable('2026-01-02T10:05:00Z')),
             'pending-to-failed' => $application->failEnrichment(),
             'processing-to-processing' => (static function () use ($application): void {
@@ -105,7 +93,6 @@ final class ApplicationTest extends TestCase
     /** @return iterable<string, array{string}> */
     public static function invalidTransitionActions(): iterable
     {
-        yield 'pending cannot return to pending' => ['pending-to-pending'];
         yield 'pending cannot complete' => ['pending-to-completed'];
         yield 'pending cannot fail' => ['pending-to-failed'];
         yield 'processing cannot start again' => ['processing-to-processing'];

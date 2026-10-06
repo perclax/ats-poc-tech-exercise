@@ -10,6 +10,7 @@ use App\Applications\Domain\Application\ApplicationId;
 use App\Applications\Domain\Application\ApplicationStatus;
 use App\Applications\Domain\Candidate\Candidate;
 use App\Applications\Domain\Candidate\EmailAddress;
+use App\Applications\Domain\Enrichment\EnrichmentResult;
 use App\Applications\Domain\Enrichment\EnrichmentStatus;
 use App\Applications\Domain\Job\JobId;
 use App\Tests\Support\MongoDbTestCase;
@@ -68,6 +69,55 @@ final class DoctrineMongoApplicationRepositoryTest extends MongoDbTestCase
 
         self::assertNotNull($this->repository->find($first->id()));
         self::assertNotNull($this->repository->find($second->id()));
+    }
+
+    public function testOnlyOneConcurrentClaimSucceeds(): void
+    {
+        $application = $this->application('018f47a2-7b3c-7def-8123-123456789abc');
+        $this->repository->save($application);
+
+        $claimed = $this->repository->claimForEnrichment($application->id());
+        $competing = $this->repository->claimForEnrichment($application->id());
+
+        self::assertSame(EnrichmentStatus::PROCESSING, $claimed?->enrichmentStatus());
+        self::assertNull($competing);
+        self::assertNull($this->repository->claimForEnrichment(ApplicationId::fromString('018f47a2-7b3c-7def-8123-123456789abd')));
+    }
+
+    public function testClaimedApplicationCompletesWithScoreAndTimestamp(): void
+    {
+        $application = $this->application('018f47a2-7b3c-7def-8123-123456789abc');
+        $this->repository->save($application);
+        $claimed = $this->repository->claimForEnrichment($application->id());
+        self::assertNotNull($claimed);
+
+        $claimed->completeEnrichment(new EnrichmentResult('Mock analysis.', 0), new \DateTimeImmutable('2026-10-03T10:21:00+00:00'));
+        $this->repository->completeEnrichment($claimed);
+        $stored = $this->repository->find($application->id());
+
+        self::assertSame(EnrichmentStatus::COMPLETED, $stored?->enrichmentStatus());
+        self::assertSame(0, $stored->enrichmentResult()?->score);
+        self::assertSame('Mock analysis.', $stored->enrichmentResult()->summary);
+        self::assertSame('2026-10-03T10:21:00+00:00', $stored->enrichedAt()?->format('c'));
+        self::assertNull($this->repository->claimForEnrichment($application->id()));
+    }
+
+    public function testReleaseAndFailOnlyAffectProcessingApplications(): void
+    {
+        $application = $this->application('018f47a2-7b3c-7def-8123-123456789abc');
+        $this->repository->save($application);
+
+        $this->repository->failEnrichment($application->id());
+        self::assertSame(EnrichmentStatus::PENDING, $this->repository->find($application->id())?->enrichmentStatus());
+
+        $this->repository->claimForEnrichment($application->id());
+        $this->repository->releaseEnrichment($application->id());
+        self::assertSame(EnrichmentStatus::PENDING, $this->repository->find($application->id())?->enrichmentStatus());
+
+        $this->repository->claimForEnrichment($application->id());
+        $this->repository->failEnrichment($application->id());
+        self::assertSame(EnrichmentStatus::FAILED, $this->repository->find($application->id())?->enrichmentStatus());
+        self::assertNull($this->repository->claimForEnrichment($application->id()));
     }
 
     private function application(string $id): Application
