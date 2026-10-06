@@ -73,6 +73,9 @@ final class ApplicationSubmissionControllerTest extends WebTestCase
         self::assertResponseHeaderSame('Referrer-Policy', 'no-referrer');
         self::assertSelectorTextContains('h1', 'Application received');
         self::assertStringContainsString('Mock analysis is pending', $crawler->text());
+        $id = $this->firstApplication()->id;
+        self::assertSame(strtolower($id), $crawler->filter('.application-id')->text());
+        self::assertSame('/applications/'.$id, $crawler->selectLink('View application')->attr('href'));
     }
 
     public function testInvalidFieldsRenderErrorsAndPreserveSubmittedValuesWithoutUsingSession(): void

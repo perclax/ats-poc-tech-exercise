@@ -14,7 +14,9 @@ use App\Applications\Domain\Enrichment\EnrichmentResult;
 use App\Applications\Domain\Enrichment\EnrichmentStatus;
 use App\Applications\Domain\Job\JobId;
 use App\Applications\Infrastructure\Enrichment\DeterministicCvEnricher;
+use App\Applications\Infrastructure\Persistence\Doctrine\ApplicationDocument;
 use App\Applications\Infrastructure\Persistence\Doctrine\ApplicationDocumentMapper;
+use Doctrine\ODM\MongoDB\DocumentManager;
 
 final readonly class DemoApplicationSeeder
 {
@@ -23,7 +25,19 @@ final readonly class DemoApplicationSeeder
         private JobCatalog $jobs,
         private DeterministicCvEnricher $enricher,
         private ApplicationDocumentMapper $mapper,
+        private DocumentManager $documentManager,
     ) {
+    }
+
+    public function seedIfEmpty(): DemoSeedResult
+    {
+        if (0 !== $this->documentManager->getDocumentCollection(ApplicationDocument::class)->countDocuments()) {
+            return new DemoSeedResult(true, 0, 0);
+        }
+
+        $report = $this->seed();
+
+        return new DemoSeedResult(false, $report['created'], $report['alreadyPresent']);
     }
 
     /** @return array{created: int, alreadyPresent: int} */

@@ -16,14 +16,16 @@ verification, and the final browser review.
 | Newest-first list, immediate filters, candidate search | Satisfied | Read repository and controller tests; manually browser-launched harness executed with 31/31 scenarios passing |
 | Detail with original CV, candidate data, results, statuses and timestamps | Satisfied | Detail functional tests and escaped-content live smoke |
 | DDD, hexagonal architecture, CQRS/events | Satisfied | Module/layer separation, focused ports, domain independence test |
-| Unit and integration tests, quality tools | Satisfied in current workspace | 170 tests / 1,130 assertions; PHPStan level 8 and formatting pass |
+| Unit and integration tests, quality tools | Satisfied in current workspace | 192 tests / 1,252 assertions; PHPStan level 8 and formatting pass |
 | Straightforward local startup and delivery | Satisfied | Isolated clean-clone startup and full checks passed at provisional SHA `a059fd4549000f8a951d505e67799b1d72e4cc9b`; demo data persisted across shutdown and restart |
 | Fictional repeatable demo data | Satisfied in current workspace | Four exact approved records; first live run created four and second created zero; command tests cover preflight conflicts and progressed state |
 
 CV excerpts were deliberately excluded by explicit user decision: the exercise
 does not require them, and the original CV remains available in the detail view.
-No summary format, scoring, smoke expected summaries, or existing completed
-application results were changed.
+At Task 6, no summary format, scoring algorithm, smoke expected summaries, or
+existing completed application results were changed. The later REST alias
+correction described below changes results for CVs containing the newly
+supported `REST APIs` phrase; the scoring algorithm remains unchanged.
 
 ## Post-audit corrections
 
@@ -62,6 +64,19 @@ level 8 with no errors, no formatting changes required, and passing Compose
 topology, MongoDB, RabbitMQ, HTTP, enrichment, and browsing smoke checks. Strict
 Composer validation, the locked dependency audit, changed-PHP syntax checks,
 all smoke-script syntax checks, and JavaScript module syntax checks also passed.
+
+## Final evaluator polish
+
+The final complete `make check` run passed with 192 tests and 1,252 assertions,
+PHPStan level 8, formatting, and all live smoke checks. Conditional demo seeding
+preserves nonempty collections, including progressed demos, without dispatching
+messages. An isolated Compose project verified fresh initialization, repeated
+initialization, and a destructive hard reset returning five records to the four
+reserved demos. All four isolated volumes were removed and dependencies were
+reinstalled; the original project's application data and volume identities were
+verified unchanged after restoration. Chrome passed all 31 browser harness
+scenarios and confirmed the visibly lowercase confirmation ID and canonical
+detail link at 390 px width.
 
 ## Security and dependency review
 

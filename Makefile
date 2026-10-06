@@ -1,4 +1,4 @@
-.PHONY: init test analyse lint check smoke down
+.PHONY: init test analyse lint check smoke down hard-reset
 
 COMPOSE := docker compose
 RUN_APP := $(COMPOSE) run --rm app
@@ -10,6 +10,7 @@ init:
 	$(COMPOSE) up -d --wait
 	$(COMPOSE) exec -T app php bin/console messenger:setup-transports
 	$(COMPOSE) exec -T app php bin/console doctrine:mongodb:schema:update
+	$(COMPOSE) exec -T app php bin/console app:applications:seed-demo --if-empty
 
 test:
 	$(RUN_TEST) php vendor/bin/phpunit
@@ -32,3 +33,8 @@ check: test analyse lint smoke
 
 down:
 	$(COMPOSE) down
+
+hard-reset:
+	@echo "WARNING: Deleting application data and all Docker volumes for this Compose project."
+	$(COMPOSE) down --volumes --remove-orphans
+	$(MAKE) init

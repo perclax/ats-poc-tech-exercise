@@ -3,7 +3,7 @@
 {% block title %}Application received{% endblock %}
 
 {% block body %}
-    <p class="eyebrow">Application {{ applicationId }}</p>
+    <p class="eyebrow">Application <span class="application-id">{{ applicationId }}</span></p>
     <h1>Application received</h1>
     {% if analysisQueued %}
         <p>Your application was stored successfully. Its Mock analysis is pending.</p>
