@@ -1,6 +1,6 @@
 health:
     path: /health
-    controller: App\Infrastructure\Probe\Http\HealthController
+    controller: App\Infrastructure\Http\HealthController
     methods: [GET]
 
 application_apply:

@@ -19,7 +19,7 @@ if echo "$images" | grep -Eq '(^|:)latest$'; then
 fi
 
 volumes="$(docker compose config --volumes)"
-for required_volume in mongodb_data probe_data rabbitmq_data vendor_data; do
+for required_volume in mongodb_data rabbitmq_data vendor_data; do
     echo "$volumes" | grep -qx "$required_volume" || {
         echo "Missing required volume: $required_volume" >&2
         exit 1

@@ -23,8 +23,6 @@ lint:
 
 smoke:
 	./tests/Smoke/compose.sh
-	$(COMPOSE) exec -T app php bin/console app:probe:mongodb
-	$(COMPOSE) exec -T app php bin/console app:probe:rabbitmq
 	./tests/Smoke/http.sh
 	./tests/Smoke/enrichment.sh
 	./tests/Smoke/browse.sh

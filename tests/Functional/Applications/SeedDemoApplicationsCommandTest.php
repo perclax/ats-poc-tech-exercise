@@ -234,7 +234,7 @@ final class SeedDemoApplicationsCommandTest extends MongoDbTestCase
 
     private function resetTransports(): void
     {
-        foreach (['enrichment_async', 'failed', 'infrastructure_async'] as $name) {
+        foreach (['enrichment_async', 'failed'] as $name) {
             $transport = self::getContainer()->get('messenger.transport.'.$name);
             self::assertInstanceOf(InMemoryTransport::class, $transport);
             $transport->reset();
@@ -243,7 +243,7 @@ final class SeedDemoApplicationsCommandTest extends MongoDbTestCase
 
     private function assertTransportsEmpty(): void
     {
-        foreach (['enrichment_async', 'failed', 'infrastructure_async'] as $name) {
+        foreach (['enrichment_async', 'failed'] as $name) {
             $transport = self::getContainer()->get('messenger.transport.'.$name);
             self::assertInstanceOf(InMemoryTransport::class, $transport);
             self::assertSame([], $transport->getSent());

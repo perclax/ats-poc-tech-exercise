@@ -1,6 +1,3 @@
-parameters:
-    probe_receipt_directory: '%env(PROBE_RECEIPT_DIRECTORY)%'
-
 services:
     _defaults:
         autowire: true
@@ -13,10 +10,6 @@ services:
             - '../src/Applications/Domain/'
             - '../src/Applications/Application/Command/'
             - '../src/Applications/Application/Query/'
-
-    App\Infrastructure\Probe\RabbitMq\ProbeReceiptStore:
-        arguments:
-            $directory: '%probe_receipt_directory%'
 
     App\Applications\Application\Command\SubmitApplicationHandler: ~
     App\Applications\Application\Command\EnrichApplicationHandler:

@@ -67,7 +67,7 @@ final class ApplicationBrowseControllerTest extends WebTestCase
             self::assertStringNotContainsString('processingStartedAt', (string) $this->client->getResponse()->getContent());
         }
         self::assertSame($before, $this->snapshot());
-        foreach (['enrichment_async', 'failed', 'infrastructure_async'] as $name) {
+        foreach (['enrichment_async', 'failed'] as $name) {
             $transport = self::getContainer()->get('messenger.transport.'.$name);
             self::assertInstanceOf(InMemoryTransport::class, $transport);
             self::assertSame([], $transport->getSent());

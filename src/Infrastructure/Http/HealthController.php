@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Infrastructure\Probe\Http;
+namespace App\Infrastructure\Http;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 
