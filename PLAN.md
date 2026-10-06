@@ -21,7 +21,7 @@ Update the status table after the user accepts a task result.
 | 3 | Enrich applications asynchronously | Done | Task 2 |
 | 4 | Browse and inspect applications | Done | Task 2; Task 3 for enrichment fields |
 | 5 | Complete the user experience | Done | Tasks 2–4 |
-| 6 | Verify and prepare the submission | Pending | Tasks 0–5 |
+| 6 | Verify and prepare the submission | Done | Tasks 0–5 |
 
 Allowed status values: `Pending`, `In progress`, `Blocked`, and `Done`.
 
@@ -252,6 +252,13 @@ understand, test, and demonstrate locally.
 - Review every exercise requirement and acceptance criterion against the final
   implementation.
 - Add a small idempotent fictional demo-data command or fixture mechanism.
+- Preserve the existing deterministic matched-skill summary, matching, aliases,
+  scoring, and smoke expectations. Do not modify the enrichment adapter or its
+  unit tests. Completed demo records must use the existing adapter.
+- Add demo seed tests, a MongoDB test-database safety guard, and exact-ID smoke
+  cleanup hardening.
+- Audit security and dependencies, create the provisional Task 6 commit, verify
+  an isolated clean clone, and record completion in a separate PLAN-only commit.
 - Test the clean-clone path and every documented command.
 - Run the full unit, integration, static-analysis, and formatting suite.
 - Review logs and committed files for secrets or personal data.
@@ -275,6 +282,15 @@ understand, test, and demonstrate locally.
 - The repository contains no secrets, real candidate data, generated caches,
   container volumes, or `vendor`.
 - Known limitations are concise and accurate.
+
+### Summary decision and traceability
+
+The original exercise's concise CV summary requirement is satisfied by the
+existing deterministic matched-skill summary. CV excerpts are deliberately
+excluded because the exercise does not require them; the original CV remains
+available in the detail view. This is an explicit user decision superseding the
+earlier project-specific requirement. Task 6 adds no excerpt normalization,
+truncation, tests, smoke expectations, demo expectations, or README description.
 
 ## Cross-task completion report
 

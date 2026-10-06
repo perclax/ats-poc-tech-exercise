@@ -4,10 +4,15 @@ set -eu
 temporary_directory="$(mktemp -d)"
 application_id=''
 cleanup() {
+    cleanup_status=0
     if [ -n "$application_id" ]; then
-        docker compose exec -T app php tests/Smoke/verify-enrichment.php cleanup "$application_id" >/dev/null 2>&1 || true
+        docker compose exec -T app php tests/Smoke/verify-enrichment.php cleanup "$application_id" "$correlation" >/dev/null || cleanup_status=1
     fi
     rm -rf "$temporary_directory"
+    if [ "$cleanup_status" -ne 0 ]; then
+        echo 'Could not remove the exact enrichment smoke application.' >&2
+        exit 1
+    fi
 }
 trap cleanup EXIT
 

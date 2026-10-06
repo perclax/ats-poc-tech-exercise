@@ -127,7 +127,7 @@ Do not implement an outbox for this PoC. Persistence and publication are not ato
 
 Each job defines skills with recognizable words or aliases. Match without case sensitivity while avoiding accidental substring matches. Account for terms such as PHP, TypeScript, and REST. Count each skill once. Calculate the score as the percentage of expected skills detected, rounded to an integer. Return zero when none are found. Every job must define at least one skill. Keep skill groupings and aliases explicit in data and tests.
 
-Generate the summary from a template using detected skills and a short CV excerpt. Do not invent experience, education, or abilities. Label the result `Mock analysis` in the UI and explain the simulation in the README. Do not present the score as a real assessment of professional suitability.
+Generate the summary from a deterministic template using detected skills. Do not invent experience, education, or abilities. Label the result `Mock analysis` in the UI and explain the simulation in the README. Do not present the score as a real assessment of professional suitability.
 
 Use controlled test doubles to exercise failures. Do not introduce magic words in CV text or artificial delays into domain logic.
 
