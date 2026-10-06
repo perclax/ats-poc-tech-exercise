@@ -40,8 +40,13 @@ services:
     App\Applications\Application\Port\EnrichmentDispatcher:
         alias: App\Applications\Infrastructure\Messaging\MessengerEnrichmentDispatcher
 
+    App\Applications\Infrastructure\Enrichment\SimulatedLatencyCvEnricher:
+        arguments:
+            $inner: '@App\Applications\Infrastructure\Enrichment\DeterministicCvEnricher'
+            $latencyMilliseconds: '%env(int:MOCK_ENRICHMENT_LATENCY_MS)%'
+
     App\Applications\Application\Port\CvEnricher:
-        alias: App\Applications\Infrastructure\Enrichment\DeterministicCvEnricher
+        alias: App\Applications\Infrastructure\Enrichment\SimulatedLatencyCvEnricher
 
     App\Applications\Infrastructure\Messaging\DispatchEnrichmentOnApplicationSubmitted:
         tags:

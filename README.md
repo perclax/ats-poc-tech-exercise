@@ -100,6 +100,10 @@ case-insensitive whole-word matching, and the summary lists the matched skills.
 The result is deterministic and labelled "Mock analysis" in the UI. It is not a
 real assessment of a candidate.
 
+To mimic a real model call, the worker waits `MOCK_ENRICHMENT_LATENCY_MS`
+(5 seconds by default; 0 in tests), so the pending and processing states are
+visible in the UI.
+
 ## Known limitations
 
 - Storing an application and publishing its message are not atomic (no outbox).
